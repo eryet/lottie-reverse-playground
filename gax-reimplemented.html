@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAx Reimplemented</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #0a0a1a;
+  }
+  canvas {
+    width: min(100vw, 100vh);
+    height: min(100vw, 100vh);
+    max-width: 540px;
+    max-height: 540px;
+  }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script src="gax-config.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const config = window.GAX_CONFIG;
+const W = config.size.w;
+const H = config.size.h;
+const FPS = config.fps;
+const TOTAL_FRAMES = config.totalFrames;
+
+function cubicBezier(x1, y1, x2, y2) {
+  return function(t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+
+    let cx = 3 * x1;
+    let bx = 3 * (x2 - x1) - cx;
+    let ax = 1 - cx - bx;
+    let cy = 3 * y1;
+    let by = 3 * (y2 - y1) - cy;
+    let ay = 1 - cy - by;
+
+    function sampleX(tt) { return ((ax * tt + bx) * tt + cx) * tt; }
+    function sampleY(tt) { return ((ay * tt + by) * tt + cy) * tt; }
+
+    let guess = t;
+    for (let i = 0; i < 8; i++) {
+      const error = sampleX(guess) - t;
+      if (Math.abs(error) < 1e-6) break;
+      const slope = (3 * ax * guess + 2 * bx) * guess + cx;
+      if (Math.abs(slope) < 1e-6) break;
+      guess -= error / slope;
+    }
+
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 10; i++) {
+      const x = sampleX(guess);
+      if (Math.abs(x - t) < 1e-6) break;
+      if (x < t) lo = guess; else hi = guess;
+      guess = (lo + hi) / 2;
+    }
+
+    return sampleY(guess);
+  };
+}
+
+function clamp01(v) {
+  return Math.max(0, Math.min(1, v));
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function lerpValue(a, b, t) {
+  if (Array.isArray(a)) return a.map((v, i) => lerpValue(v, b[i], t));
+  return lerp(a, b, t);
+}
+
+function isKeyframedValue(value) {
+  return Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null && 't' in value[0];
+}
+
+function sampleAnimatedValue(value, frame) {
+  if (!isKeyframedValue(value)) return value;
+  if (frame <= value[0].t) return value[0].s;
+
+  for (let i = 0; i < value.length - 1; i++) {
+    const current = value[i];
+    const next = value[i + 1];
+    if (frame <= next.t) {
+      if (current.h === 1) return current.s;
+      let t = clamp01((frame - current.t) / Math.max(1e-6, next.t - current.t));
+      if (current.o && current.i) {
+        t = cubicBezier(current.o.x, current.o.y, current.i.x, current.i.y)(t);
+      }
+      return lerpValue(current.s, next.s, t);
+    }
+  }
+
+  return value[value.length - 1].s;
+}
+
+function sampleScalar(value, frame) {
+  const sampled = sampleAnimatedValue(value, frame);
+  return Array.isArray(sampled) ? sampled[0] : sampled;
+}
+
+function appendBezierPath(ctx, shape) {
+  const { v, i, o, c } = shape;
+  if (!v || v.length === 0) return;
+
+  ctx.moveTo(v[0][0], v[0][1]);
+  for (let index = 1; index < v.length; index++) {
+    const prev = index - 1;
+    ctx.bezierCurveTo(
+      v[prev][0] + o[prev][0],
+      v[prev][1] + o[prev][1],
+      v[index][0] + i[index][0],
+      v[index][1] + i[index][1],
+      v[index][0],
+      v[index][1]
+    );
+  }
+
+  if (c) {
+    const last = v.length - 1;
+    ctx.bezierCurveTo(
+      v[last][0] + o[last][0],
+      v[last][1] + o[last][1],
+      v[0][0] + i[0][0],
+      v[0][1] + i[0][1],
+      v[0][0],
+      v[0][1]
+    );
+    ctx.closePath();
+  }
+}
+
+function colorToRgba(color, alpha) {
+  const r = Math.round(color[0] * 255);
+  const g = Math.round(color[1] * 255);
+  const b = Math.round(color[2] * 255);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function drawShape(shapeKey, alpha) {
+  if (alpha <= 0) return;
+
+  const shape = config.shapes[shapeKey];
+  ctx.save();
+  ctx.scale(shape.transform.scale[0] / 100, shape.transform.scale[1] / 100);
+  ctx.rotate(shape.transform.rotation * Math.PI / 180);
+  ctx.beginPath();
+  appendBezierPath(ctx, shape.path);
+  ctx.fillStyle = colorToRgba(shape.fill, alpha);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSprite(sprite, frame) {
+  const outerOpacity = sampleScalar(sprite.outerOpacity, frame) / 100;
+  const innerOpacity = sampleScalar(sprite.innerOpacity, frame) / 100;
+  const alpha = outerOpacity * innerOpacity;
+  if (alpha <= 0) return;
+
+  const position = sampleAnimatedValue(sprite.position, frame);
+  const rotation = sampleScalar(sprite.rotation, frame);
+  const x = sprite.offset[0] + position[0];
+  const y = sprite.offset[1] + position[1];
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation * Math.PI / 180);
+  drawShape(sprite.shape, alpha);
+  ctx.restore();
+}
+
+function drawBackground(frame, rootAlpha) {
+  const background = config.background;
+  const alpha = rootAlpha * (sampleScalar(background.outerOpacity, frame) / 100) * (sampleScalar(background.innerOpacity, frame) / 100);
+  if (alpha <= 0) return;
+
+  const rotation = sampleScalar(background.rotation, frame);
+
+  ctx.save();
+  ctx.translate(background.position[0], background.position[1]);
+  ctx.rotate(rotation * Math.PI / 180);
+  drawShape(background.shape, alpha);
+  ctx.restore();
+}
+
+let playhead = 0;
+let lastTime = 0;
+
+function render(currentFrame) {
+  ctx.clearRect(0, 0, W, H);
+
+  const rootAlpha = sampleScalar(config.rootOpacity, currentFrame) / 100;
+  drawBackground(currentFrame, rootAlpha);
+
+  const groupPosition = config.group.position;
+  const groupRotation = sampleScalar(config.group.rotation, currentFrame);
+
+  ctx.save();
+  ctx.translate(groupPosition[0], groupPosition[1]);
+  ctx.rotate(groupRotation * Math.PI / 180);
+  ctx.globalAlpha = rootAlpha;
+  for (const sprite of config.sprites) {
+    drawSprite(sprite, currentFrame);
+  }
+  ctx.restore();
+}
+
+function animate(timestamp) {
+  if (!lastTime) {
+    lastTime = timestamp;
+    render(playhead);
+    requestAnimationFrame(animate);
+    return;
+  }
+
+  const elapsed = timestamp - lastTime;
+  lastTime = timestamp;
+  playhead = (playhead + elapsed * FPS / 1000) % TOTAL_FRAMES;
+  render(playhead);
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

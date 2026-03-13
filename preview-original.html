@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Original Lottie Preview</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #0a0a1a; flex-direction: column; gap: 20px; }
+  h1 { color: white; font-family: sans-serif; }
+  #player { width: 540px; height: 540px; }
+  body.embed { gap: 0; }
+  body.embed h1 { display: none; }
+</style>
+</head>
+<body>
+<h1>Original Lottie</h1>
+<dotlottie-player id="player" src="lottie/KlssigNhDf.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
+<script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+<script>
+if (new URLSearchParams(window.location.search).get('embed') === '1') {
+  document.body.classList.add('embed');
+}
+</script>
+</body>
+</html>

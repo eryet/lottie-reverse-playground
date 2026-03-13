@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coin Reveal Comparison</title>
+<style>
+  :root {
+    --bg: #050814;
+    --panel: rgba(16, 23, 46, 0.82);
+    --panel-border: rgba(132, 163, 255, 0.22);
+    --text: #f3f7ff;
+    --muted: #95a1c3;
+    --accent: #78ddba;
+    --accent-2: #2d6cf5;
+    --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    padding: 28px;
+    color: var(--text);
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(45, 108, 245, 0.18), transparent 30%),
+      radial-gradient(circle at top right, rgba(120, 221, 186, 0.15), transparent 28%),
+      linear-gradient(180deg, #091024 0%, var(--bg) 100%);
+  }
+
+  .shell {
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .heading h1 {
+    font-size: clamp(1.4rem, 2vw, 2.1rem);
+    letter-spacing: 0.03em;
+  }
+
+  .heading p {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+  }
+
+  button {
+    appearance: none;
+    border: 1px solid rgba(120, 221, 186, 0.28);
+    background: rgba(120, 221, 186, 0.12);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 999px;
+    font: inherit;
+    cursor: pointer;
+    transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
+  }
+
+  button:hover {
+    background: rgba(120, 221, 186, 0.18);
+    border-color: rgba(120, 221, 186, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+  }
+
+  .panel-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .panel-subtitle {
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+
+  .badge {
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    white-space: nowrap;
+  }
+
+  .viewport {
+    aspect-ratio: 1 / 1;
+    background:
+      linear-gradient(180deg, rgba(5, 8, 20, 0.25), rgba(5, 8, 20, 0.65)),
+      #0a0a1a;
+  }
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #0a0a1a;
+  }
+
+  .footer-note {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 960px) {
+    body {
+      padding: 18px;
+    }
+
+    .topbar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="heading">
+      <h1>Coin Reveal Comparison</h1>
+      <p>Original `.lottie` on the left, reverse-engineered HTML canvas on the right.</p>
+    </div>
+    <div class="controls">
+      <button type="button" id="restart">Restart Both</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">Original</div>
+          <div class="panel-subtitle">`preview-original.html?embed=1`</div>
+        </div>
+        <div class="badge">Source Lottie</div>
+      </div>
+      <div class="viewport">
+        <iframe id="original-frame" src="preview-original.html?embed=1" title="Original Lottie Preview"></iframe>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">Reconstruction</div>
+          <div class="panel-subtitle">`coin-reveal-idle.html`</div>
+        </div>
+        <div class="badge">Canvas Replica</div>
+      </div>
+      <div class="viewport">
+        <iframe id="replica-frame" src="coin-reveal-idle.html" title="Reverse Engineered Coin Reveal"></iframe>
+      </div>
+    </section>
+  </div>
+
+  <p class="footer-note">`Restart Both` reloads both frames together so you can resync the loops for visual comparison.</p>
+</div>
+
+<script>
+const frames = [
+  document.getElementById('original-frame'),
+  document.getElementById('replica-frame'),
+];
+
+function restartFrames() {
+  for (const frame of frames) {
+    const current = frame.getAttribute('src');
+    frame.setAttribute('src', current);
+  }
+}
+
+document.getElementById('restart').addEventListener('click', restartFrames);
+</script>
+</body>
+</html>
