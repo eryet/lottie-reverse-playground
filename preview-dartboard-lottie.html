@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dartboard Lottie Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #1a1a2e;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    gap: 16px;
+  }
+  h2 { font-size: 1.2rem; opacity: 0.7; }
+  #lottie-container {
+    width: min(90vw, 540px);
+    height: min(90vw, 540px);
+    background: #0a0a1a;
+    border-radius: 12px;
+  }
+</style>
+</head>
+<body>
+<h2>Dartboard — Lottie JSON Preview</h2>
+<div id="lottie-container"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script>
+lottie.loadAnimation({
+  container: document.getElementById('lottie-container'),
+  renderer: 'svg',
+  loop: true,
+  autoplay: true,
+  path: 'dartboard.json',
+});
+</script>
+</body>
+</html>

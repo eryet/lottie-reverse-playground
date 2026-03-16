@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dartboard Animation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #1a1a2e;
+  }
+  canvas {
+    width: min(100vw, 100vh);
+    height: min(100vw, 100vh);
+    max-width: 540px;
+    max-height: 540px;
+  }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 1080, H = 1080;
+const CX = W / 2, CY = H / 2;
+const FPS = 60;
+const TOTAL_FRAMES = 300; // 5 seconds
+
+// =============================================
+// EASING
+// =============================================
+function cubicBezier(x1, y1, x2, y2) {
+  return function(t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    let cx = 3*x1, bx = 3*(x2-x1)-cx, ax = 1-cx-bx;
+    let cy = 3*y1, by = 3*(y2-y1)-cy, ay = 1-cy-by;
+    function sX(tt) { return ((ax*tt+bx)*tt+cx)*tt; }
+    function sY(tt) { return ((ay*tt+by)*tt+cy)*tt; }
+    function solve(x) {
+      let tt = x;
+      for (let i = 0; i < 14; i++) {
+        let ex = sX(tt) - x;
+        if (Math.abs(ex) < 1e-7) return tt;
+        let dx = (3*ax*tt+2*bx)*tt+cx;
+        if (Math.abs(dx) < 1e-7) break;
+        tt -= ex / dx;
+      }
+      let lo = 0, hi = 1; tt = x;
+      for (let i = 0; i < 20; i++) {
+        let mid = sX(tt);
+        if (Math.abs(mid - x) < 1e-7) break;
+        if (x > mid) lo = tt; else hi = tt;
+        tt = (lo + hi) / 2;
+      }
+      return tt;
+    }
+    return sY(solve(t));
+  };
+}
+
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+const easeOutQuart = cubicBezier(0.25, 1, 0.5, 1);
+const easeOutBack = cubicBezier(0.34, 1.56, 0.64, 1);
+
+// =============================================
+// DARTBOARD DRAWING
+// =============================================
+const BOARD_RADIUS = 320;
+const DOUBLE_OUTER = 320;
+const DOUBLE_INNER = 300;
+const TREBLE_OUTER = 195;
+const TREBLE_INNER = 180;
+const OUTER_BULL = 55;
+const INNER_BULL = 22;
+
+const NUMBERS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+
+const COL = {
+  black: '#1c1c1c',
+  cream: '#f5e6c8',
+  red: '#d62839',
+  green: '#1b6b3a',
+  wire: '#a8a8a8',
+};
+
+// Pre-render dartboard to offscreen canvas (static, no need to redraw every frame)
+const boardCanvas = document.createElement('canvas');
+boardCanvas.width = W;
+boardCanvas.height = H;
+const bctx = boardCanvas.getContext('2d');
+
+function renderDartboardOnce() {
+  bctx.save();
+  bctx.translate(CX, CY);
+
+  // Background circle
+  bctx.beginPath();
+  bctx.arc(0, 0, BOARD_RADIUS + 15, 0, Math.PI * 2);
+  bctx.fillStyle = '#111';
+  bctx.fill();
+
+  const seg = Math.PI * 2 / 20;
+  const off = -Math.PI / 2 - seg / 2;
+
+  for (let i = 0; i < 20; i++) {
+    const a1 = off + i * seg;
+    const a2 = a1 + seg;
+    const even = i % 2 === 0;
+
+    // Double ring
+    bctx.beginPath();
+    bctx.arc(0, 0, DOUBLE_OUTER, a1, a2);
+    bctx.arc(0, 0, DOUBLE_INNER, a2, a1, true);
+    bctx.closePath();
+    bctx.fillStyle = even ? COL.red : COL.green;
+    bctx.fill();
+
+    // Outer single
+    bctx.beginPath();
+    bctx.arc(0, 0, DOUBLE_INNER, a1, a2);
+    bctx.arc(0, 0, TREBLE_OUTER, a2, a1, true);
+    bctx.closePath();
+    bctx.fillStyle = even ? COL.black : COL.cream;
+    bctx.fill();
+
+    // Treble ring
+    bctx.beginPath();
+    bctx.arc(0, 0, TREBLE_OUTER, a1, a2);
+    bctx.arc(0, 0, TREBLE_INNER, a2, a1, true);
+    bctx.closePath();
+    bctx.fillStyle = even ? COL.red : COL.green;
+    bctx.fill();
+
+    // Inner single
+    bctx.beginPath();
+    bctx.arc(0, 0, TREBLE_INNER, a1, a2);
+    bctx.arc(0, 0, OUTER_BULL, a2, a1, true);
+    bctx.closePath();
+    bctx.fillStyle = even ? COL.black : COL.cream;
+    bctx.fill();
+  }
+
+  // Outer bull (green)
+  bctx.beginPath();
+  bctx.arc(0, 0, OUTER_BULL, 0, Math.PI * 2);
+  bctx.fillStyle = COL.green;
+  bctx.fill();
+
+  // Inner bull / bullseye (red)
+  bctx.beginPath();
+  bctx.arc(0, 0, INNER_BULL, 0, Math.PI * 2);
+  bctx.fillStyle = COL.red;
+  bctx.fill();
+
+  // Wire lines
+  bctx.strokeStyle = COL.wire;
+  bctx.lineWidth = 1.2;
+  for (let i = 0; i < 20; i++) {
+    const a = off + i * seg;
+    bctx.beginPath();
+    bctx.moveTo(Math.cos(a) * OUTER_BULL, Math.sin(a) * OUTER_BULL);
+    bctx.lineTo(Math.cos(a) * DOUBLE_OUTER, Math.sin(a) * DOUBLE_OUTER);
+    bctx.stroke();
+  }
+
+  // Wire rings
+  bctx.lineWidth = 0.8;
+  for (const r of [DOUBLE_OUTER, DOUBLE_INNER, TREBLE_OUTER, TREBLE_INNER, OUTER_BULL, INNER_BULL]) {
+    bctx.beginPath();
+    bctx.arc(0, 0, r, 0, Math.PI * 2);
+    bctx.stroke();
+  }
+
+  // Numbers
+  bctx.fillStyle = '#e0e0e0';
+  bctx.font = 'bold 30px Arial, sans-serif';
+  bctx.textAlign = 'center';
+  bctx.textBaseline = 'middle';
+  const numR = DOUBLE_OUTER + 28;
+  for (let i = 0; i < 20; i++) {
+    const a = off + seg / 2 + i * seg;
+    bctx.fillText(NUMBERS[i].toString(), Math.cos(a) * numR, Math.sin(a) * numR);
+  }
+
+  bctx.restore();
+}
+renderDartboardOnce();
+
+// =============================================
+// DART DRAWING
+// =============================================
+function drawDart(x, y, rotation, scale, opacity) {
+  if (opacity <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  ctx.scale(scale, scale);
+
+  // Shadow under dart
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 4;
+  ctx.shadowOffsetY = 4;
+
+  // Tip (metallic needle)
+  ctx.beginPath();
+  ctx.moveTo(40, 0);
+  ctx.lineTo(8, -3);
+  ctx.lineTo(8, 3);
+  ctx.closePath();
+  ctx.fillStyle = '#b0b0b0';
+  ctx.fill();
+
+  // Barrel (body)
+  ctx.beginPath();
+  ctx.moveTo(8, -6);
+  ctx.lineTo(-45, -5);
+  ctx.lineTo(-45, 5);
+  ctx.lineTo(8, 6);
+  ctx.closePath();
+  ctx.fillStyle = '#2a2a5e';
+  ctx.fill();
+  ctx.restore(); // end shadow
+
+  // Barrel grip texture
+  ctx.strokeStyle = '#5858a8';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    const gx = 4 - i * 7;
+    ctx.beginPath();
+    ctx.moveTo(gx, -5.5);
+    ctx.lineTo(gx, 5.5);
+    ctx.stroke();
+  }
+
+  // Shaft
+  ctx.beginPath();
+  ctx.rect(-75, -2.5, 30, 5);
+  ctx.fillStyle = '#222';
+  ctx.fill();
+
+  // Flights (fins)
+  // Top fin
+  ctx.beginPath();
+  ctx.moveTo(-75, -2);
+  ctx.lineTo(-115, -28);
+  ctx.lineTo(-105, -2);
+  ctx.closePath();
+  ctx.fillStyle = '#d62839';
+  ctx.fill();
+  // Top fin highlight
+  ctx.beginPath();
+  ctx.moveTo(-78, -2);
+  ctx.lineTo(-112, -22);
+  ctx.lineTo(-103, -2);
+  ctx.closePath();
+  ctx.fillStyle = '#f05565';
+  ctx.fill();
+
+  // Bottom fin
+  ctx.beginPath();
+  ctx.moveTo(-75, 2);
+  ctx.lineTo(-115, 28);
+  ctx.lineTo(-105, 2);
+  ctx.closePath();
+  ctx.fillStyle = '#d62839';
+  ctx.fill();
+  // Bottom fin highlight
+  ctx.beginPath();
+  ctx.moveTo(-78, 2);
+  ctx.lineTo(-112, 22);
+  ctx.lineTo(-103, 2);
+  ctx.closePath();
+  ctx.fillStyle = '#f05565';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// =============================================
+// IMPACT SPARKS
+// =============================================
+function drawImpact(x, y, progress) {
+  if (progress <= 0 || progress >= 1) return;
+  const fade = 1 - progress;
+  ctx.save();
+  ctx.globalAlpha = fade;
+
+  // Expanding bright ring
+  const r = 15 + progress * 70;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(255, 221, 87, ${fade})`;
+  ctx.lineWidth = 3 * fade;
+  ctx.stroke();
+
+  // Spark lines
+  for (let i = 0; i < 10; i++) {
+    const angle = (i / 10) * Math.PI * 2 + progress * 0.5;
+    const inner = 8 + progress * 25;
+    const outer = 20 + progress * 90;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(angle) * inner, y + Math.sin(angle) * inner);
+    ctx.lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer);
+    ctx.strokeStyle = `rgba(255, 230, 120, ${fade * 0.8})`;
+    ctx.lineWidth = 2.5 * fade;
+    ctx.stroke();
+  }
+
+  // Small bright flash at center
+  if (progress < 0.3) {
+    const flashR = 12 * (1 - progress / 0.3);
+    ctx.beginPath();
+    ctx.arc(x, y, flashR, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 255, 220, ${(1 - progress / 0.3) * 0.8})`;
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// =============================================
+// ANIMATION CONFIG
+// =============================================
+// Dart 1: flies from lower-left
+const DART1 = {
+  flyStart: 25,
+  flyEnd: 50,
+  startX: -80, startY: 980,
+  endX: CX + 2, endY: CY + 1,
+  get angle() { return Math.atan2(this.endY - this.startY, this.endX - this.startX); },
+  stuckScale: 1.1,
+};
+
+// Dart 2: flies from lower-right
+const DART2 = {
+  flyStart: 100,
+  flyEnd: 125,
+  startX: 1160, startY: 920,
+  endX: CX - 6, endY: CY + 5,
+  get angle() { return Math.atan2(this.endY - this.startY, this.endX - this.startX); },
+  stuckScale: 1.05,
+};
+
+const IMPACT_DURATION = 30; // frames
+
+// =============================================
+// RENDER
+// =============================================
+let frame = 0;
+let lastTime = 0;
+const frameDur = 1000 / FPS;
+
+function render(f) {
+  ctx.clearRect(0, 0, W, H);
+
+  // --- Board shake on dart impact ---
+  let shakeX = 0, shakeY = 0;
+  function applyShake(hitFrame) {
+    if (f >= hitFrame && f < hitFrame + 12) {
+      const t = (f - hitFrame) / 12;
+      const intensity = 6 * (1 - t);
+      shakeX += Math.sin(t * Math.PI * 8) * intensity;
+      shakeY += Math.cos(t * Math.PI * 6) * intensity;
+    }
+  }
+  applyShake(DART1.flyEnd);
+  applyShake(DART2.flyEnd);
+
+  // --- Draw dartboard (fade in over first 20 frames) ---
+  ctx.save();
+  ctx.globalAlpha = clamp01(f / 20);
+  ctx.translate(shakeX, shakeY);
+  ctx.drawImage(boardCanvas, 0, 0);
+  ctx.restore();
+
+  // --- Dart helper ---
+  function renderDart(dart, f) {
+    const flyT = clamp01((f - dart.flyStart) / (dart.flyEnd - dart.flyStart));
+    if (flyT <= 0) return;
+
+    const easedT = easeOutQuart(flyT);
+
+    if (flyT < 1) {
+      // In flight
+      const x = lerp(dart.startX, dart.endX, easedT);
+      const y = lerp(dart.startY, dart.endY, easedT);
+      const scale = lerp(2.0, dart.stuckScale, easedT);
+      drawDart(x + shakeX, y + shakeY, dart.angle, scale, 1);
+    } else {
+      // Stuck: slight wobble that decays
+      const wobbleT = clamp01((f - dart.flyEnd) / 20);
+      const wobble = Math.sin(wobbleT * Math.PI * 4) * 0.06 * (1 - wobbleT);
+      drawDart(
+        dart.endX + shakeX,
+        dart.endY + shakeY,
+        dart.angle + wobble,
+        dart.stuckScale,
+        1
+      );
+    }
+
+    // Impact sparks
+    if (f >= dart.flyEnd && f < dart.flyEnd + IMPACT_DURATION) {
+      const impactT = (f - dart.flyEnd) / IMPACT_DURATION;
+      drawImpact(dart.endX + shakeX, dart.endY + shakeY, impactT);
+    }
+  }
+
+  renderDart(DART1, f);
+  renderDart(DART2, f);
+
+  // --- "BULLSEYE!" text ---
+  if (f >= 160) {
+    const textT = clamp01((f - 160) / 25);
+    const scale = easeOutBack(textT);
+    ctx.save();
+    ctx.globalAlpha = textT;
+    ctx.translate(CX, CY - BOARD_RADIUS - 70);
+    ctx.scale(scale, scale);
+
+    // Glow behind text
+    ctx.shadowColor = '#ffdd57';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#ffdd57';
+    ctx.font = 'bold 68px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('BULLSEYE!', 0, 0);
+    ctx.shadowBlur = 0;
+
+    // Score subtitle
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '34px Arial, sans-serif';
+    ctx.fillText('50 + 50 = 100', 0, 55);
+    ctx.restore();
+  }
+}
+
+function animate(ts) {
+  if (!lastTime) lastTime = ts;
+  const dt = ts - lastTime;
+  if (dt >= frameDur) {
+    lastTime = ts - (dt % frameDur);
+    render(frame);
+    frame = (frame + 1) % TOTAL_FRAMES;
+  }
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
