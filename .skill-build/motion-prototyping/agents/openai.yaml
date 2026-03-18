@@ -1,0 +1,4 @@
+interface:
+  display_name: "Motion Prototyping"
+  short_description: "Iterative motion design from rough prompts"
+  default_prompt: "Use $motion-prototyping to turn a rough animation brief into an iterative canvas or Lottie implementation workflow."

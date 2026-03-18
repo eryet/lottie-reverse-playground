@@ -163,13 +163,12 @@
 
   .hero-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.85fr);
-    gap: 28px;
+    grid-template-columns: 1fr;
+    gap: 0;
     align-items: stretch;
   }
 
   .hero-copy,
-  .hero-panel,
   .section-card,
   .compare-card,
   .attempt-card,
@@ -188,7 +187,6 @@
   }
 
   .hero-copy::after,
-  .hero-panel::after,
   .section-card::after {
     content: "";
     position: absolute;
@@ -241,48 +239,6 @@
     margin-top: 32px;
   }
 
-  .hero-panel {
-    padding: 28px;
-    display: grid;
-    gap: 18px;
-    align-content: start;
-  }
-
-  .hero-panel h2 {
-    font-size: 1.32rem;
-  }
-
-  .metric-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  .metric {
-    padding: 18px;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .metric-value {
-    font: 700 1.5rem/1 "Space Grotesk", sans-serif;
-  }
-
-  .metric-label {
-    margin-top: 6px;
-    color: var(--muted);
-    font-size: 0.88rem;
-  }
-
-  .hero-notes {
-    display: grid;
-    gap: 10px;
-    color: var(--muted);
-    font-size: 0.95rem;
-    line-height: 1.6;
-  }
-
   main {
     padding-bottom: 88px;
   }
@@ -297,14 +253,13 @@
 
   .section-header {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    align-items: flex-start;
     gap: 24px;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
   }
 
   .section-header > div:first-child {
-    max-width: 760px;
+    max-width: 820px;
     min-width: 0;
   }
 
@@ -322,23 +277,8 @@
     line-height: 1.7;
   }
 
-  .pill-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .pill {
-    padding: 8px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--muted);
-    font-size: 0.86rem;
-    white-space: nowrap;
-  }
-
   .compare-stack,
+  .spinoff-grid,
   .attempt-grid,
   .process-grid {
     display: grid;
@@ -346,6 +286,7 @@
   }
 
   .compare-card,
+  .spinoff-card,
   .attempt-card,
   .process-card {
     padding: 26px;
@@ -411,20 +352,14 @@
   .source-strip {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 14px;
-    margin-top: 20px;
-    padding: 16px 18px;
+    margin-top: 18px;
+    padding: 14px 16px;
     border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.035);
     flex-wrap: wrap;
-  }
-
-  .source-strip p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.92rem;
   }
 
   .source-actions {
@@ -513,21 +448,18 @@
   .attempt-foot {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 16px;
     margin-top: 18px;
     flex-wrap: wrap;
   }
 
-  .compare-foot p,
-  .attempt-foot p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.92rem;
-  }
-
   .attempt-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .spinoff-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .process-grid {
@@ -676,7 +608,7 @@
   }
 
   @media (max-width: 1080px) {
-    .hero-grid,
+    .spinoff-grid,
     .attempt-grid,
     .process-grid {
       grid-template-columns: 1fr;
@@ -709,12 +641,12 @@
     }
 
     .hero-copy,
-    .hero-panel,
     .section-card {
       padding: 24px;
     }
 
     .compare-card,
+    .spinoff-card,
     .attempt-card,
     .process-card {
       padding: 20px;
@@ -723,17 +655,16 @@
     .section-header,
     .compare-head,
     .attempt-head,
-    .compare-foot,
-    .attempt-foot,
-    .source-strip,
     .source-head,
     .source-toolbar {
       flex-direction: column;
       align-items: flex-start;
     }
 
-    .metric-grid {
-      grid-template-columns: 1fr;
+    .compare-foot,
+    .attempt-foot,
+    .source-strip {
+      justify-content: flex-start;
     }
 
     .section-header h2 {
@@ -756,7 +687,8 @@
       </div>
       <nav class="nav" aria-label="Sections">
         <a href="#successes">Successful Conversions</a>
-        <a href="#attempts">New Attempts</a>
+        <a href="#attempts">Experiments</a>
+        <a href="#spinoffs">Archive</a>
         <a href="#process">Process</a>
         <a href="./compare-all.html">All Comparisons</a>
       </nav>
@@ -768,41 +700,15 @@
           <div class="eyebrow">GitHub Pages Showcase</div>
           <h1>Reverse-engineering Lottie into canvas, with side-by-side verification.</h1>
           <p>
-            This site combines validated canvas recreations with ongoing motion experiments. The recreation section places each source
-            `.lottie` asset beside its canvas implementation for direct visual verification. The dartboard section shows the adjacent
-            workflow: starting from a high-level motion brief, iterating on the canvas implementation, and reusing the result as generated Lottie JSON.
+            This site pairs source `.lottie` assets with canvas recreations for direct visual verification. It also documents the
+            adjacent workflow: start from a motion brief, prototype in canvas, refine the timing, and optionally export the result
+            back into Lottie JSON.
           </p>
           <div class="hero-actions">
             <a class="button button-primary" href="#successes">See Successful Conversions</a>
-            <a class="button" href="#attempts">See New Animation Attempts</a>
+            <a class="button" href="#attempts">See Experiments</a>
           </div>
         </article>
-
-        <aside class="hero-panel fade-up delay-2">
-          <h2>What this showcase covers</h2>
-          <div class="metric-grid">
-            <div class="metric">
-              <div class="metric-value">2</div>
-              <div class="metric-label">Completed canvas recreations</div>
-            </div>
-            <div class="metric">
-              <div class="metric-value">1</div>
-              <div class="metric-label">Canvas-to-Lottie round-trip attempt</div>
-            </div>
-            <div class="metric">
-              <div class="metric-value">60 / 100</div>
-              <div class="metric-label">Frame rates preserved from source assets</div>
-            </div>
-            <div class="metric">
-              <div class="metric-value">301 / 1600 / 300</div>
-              <div class="metric-label">Frame counts across the showcased pieces</div>
-            </div>
-          </div>
-          <div class="hero-notes">
-            <div>The verified recreations focus on timing fidelity, draw order, silhouette stability, and motion continuity.</div>
-            <div>The experiment section captures an LLM-assisted prototyping loop: provide a motion brief, review the generated pass, then iteratively refine until the runtime behavior is acceptable.</div>
-          </div>
-        </aside>
       </div>
     </section>
 
@@ -811,16 +717,11 @@
         <div class="section-header">
           <div>
             <div class="eyebrow">Verified Canvas Recreations</div>
-            <h2>Source Lottie on the left, canvas runtime on the right.</h2>
+            <h2>Source on the left, canvas on the right.</h2>
             <p>
-              These are the completed recreation pairs. Each one keeps the source asset visible so the implementation can be evaluated
-              directly against the original rather than viewed in isolation.
+              These are the completed recreation pairs. Each one keeps the source asset visible so the implementation can be judged
+              directly against the original.
             </p>
-          </div>
-          <div class="pill-row" aria-label="Highlights">
-            <div class="pill">Direct visual comparison</div>
-            <div class="pill">Reusable canvas helpers</div>
-            <div class="pill">Timing preserved</div>
           </div>
         </div>
 
@@ -830,13 +731,13 @@
               <div>
                 <h3>Coin Reveal Idle</h3>
                 <p>
-                  A compact reverse-engineering case study. The canvas implementation reconstructs easing evaluation, path interpolation,
-                  transform sampling, and layered compositing directly in plain HTML canvas code.
+                  A compact reverse-engineering case study. The canvas version rebuilds easing, path interpolation, transform
+                  sampling, and layer compositing directly in plain canvas code.
                 </p>
               </div>
               <div class="compare-links">
-                <a class="mini-link" href="./compare-side-by-side.html">Open Compare Page</a>
-                <a class="mini-link" href="./coin-reveal-idle.html">Open Canvas File</a>
+                <a class="mini-link" href="./compare-side-by-side.html">Open Compare</a>
+                <a class="mini-link" href="./coin-reveal-idle.html">Open Canvas</a>
               </div>
             </div>
 
@@ -869,12 +770,10 @@
             </div>
 
             <div class="compare-foot">
-              <p>Useful as a minimal example of the path from extracted Lottie data to a hand-authored canvas renderer.</p>
               <button type="button" data-reset="coin-original-frame,coin-canvas-frame">Restart Coin Pair</button>
             </div>
 
             <div class="source-strip">
-              <p>Inspect the implementation artifacts behind the recreation and comparison flow.</p>
               <div class="source-actions">
                 <button type="button" class="mini-link" data-source="./coin-reveal-idle.html" data-source-label="Coin Reveal canvas source">Inspect Canvas Source</button>
                 <button type="button" class="mini-link" data-source="./compare-side-by-side.html" data-source-label="Coin Reveal comparison page">Inspect Compare Page</button>
@@ -887,13 +786,13 @@
               <div>
                 <h3>GAx</h3>
                 <p>
-                  A more data-heavy case. The recreation reduces a nested Lottie structure into reusable configuration data and a custom
-                  renderer that samples transforms, opacity, and vector paths at runtime.
+                  A heavier data case. The recreation reduces nested Lottie data into extracted configuration and a custom renderer
+                  that samples transforms, opacity, and vector paths at runtime.
                 </p>
               </div>
               <div class="compare-links">
-                <a class="mini-link" href="./compare-gax-side-by-side.html">Open Compare Page</a>
-                <a class="mini-link" href="./gax-reimplemented.html">Open Canvas File</a>
+                <a class="mini-link" href="./compare-gax-side-by-side.html">Open Compare</a>
+                <a class="mini-link" href="./gax-reimplemented.html">Open Canvas</a>
               </div>
             </div>
 
@@ -926,12 +825,10 @@
             </div>
 
             <div class="compare-foot">
-              <p>Useful for showing how an asset-heavy source can still be normalized into a maintainable canvas implementation.</p>
               <button type="button" data-reset="gax-original-frame,gax-canvas-frame">Restart GAx Pair</button>
             </div>
 
             <div class="source-strip">
-              <p>Open the implementation and extracted configuration without leaving the showcase.</p>
               <div class="source-actions">
                 <button type="button" class="mini-link" data-source="./gax-reimplemented.html" data-source-label="GAx canvas source">Inspect Canvas Source</button>
                 <button type="button" class="mini-link" data-source="./gax-config.js" data-source-label="GAx extracted config">Inspect Config</button>
@@ -945,17 +842,11 @@
         <div class="section-header">
           <div>
             <div class="eyebrow">LLM-Guided Motion Experiments</div>
-            <h2>Canvas-first prototyping, then reuse back into Lottie.</h2>
+            <h2>Canvas-first prototypes and Lottie round-trips.</h2>
             <p>
-              This section covers the more exploratory side of the repo. Instead of starting from an existing `.lottie`, the dartboard
-              animation begins from a high-level motion brief, is refined through repeated LLM iterations, and is then converted back
-              into a Lottie JSON file through a generator script.
+              These experiments start from a motion brief instead of an existing `.lottie`. The dartboard pass is refined in canvas
+              first, then reused as generated Lottie JSON through a dedicated export step.
             </p>
-          </div>
-          <div class="pill-row">
-            <div class="pill">Canvas-first prototype</div>
-            <div class="pill">Generated `dartboard.json`</div>
-            <div class="pill">Round-trip workflow</div>
           </div>
         </div>
 
@@ -966,8 +857,7 @@
                 <h3>Dartboard Canvas Attempt</h3>
                 <p>
                   A hand-built board, dart motion, impact effects, and timing model written directly in canvas. This is the prototype
-                  implementation prior to export. The process starts from a rough motion brief and is iteratively refined until the
-                  resulting movement is structurally and visually acceptable.
+                  stage before export, refined through short LLM review loops until the motion reads cleanly.
                 </p>
               </div>
               <div class="attempt-links">
@@ -987,13 +877,10 @@
               </div>
             </div>
             <div class="attempt-foot">
-              <p>The goal here is not only visual output, but also developing a motion model that can be authored and tuned directly in code.</p>
-              
               <button type="button" data-reset="dart-canvas-frame">Restart Canvas Attempt</button>
             </div>
 
             <div class="source-strip">
-              <p>Inspect the canvas prototype produced by the prompt-and-refine loop.</p>
               <div class="source-actions">
                 <button type="button" class="mini-link" data-source="./dartboard.html" data-source-label="Dartboard canvas attempt">Inspect Canvas Source</button>
               </div>
@@ -1005,8 +892,8 @@
               <div>
                 <h3>Dartboard Reused as Lottie</h3>
                 <p>
-                  The same animation is exported into Lottie JSON with the generator script and then previewed with a Lottie player.
-                  This demonstrates the reverse direction as part of the showcase: prototype in canvas first, then reuse the result in Lottie form.
+                  The same animation is exported into Lottie JSON with a generator script and then previewed with a Lottie player.
+                  This is the reverse direction in the workflow: prototype in canvas first, then reuse the result in Lottie form.
                 </p>
               </div>
               <div class="attempt-links">
@@ -1027,15 +914,133 @@
               </div>
             </div>
             <div class="attempt-foot">
-              <p>This is the step that shows how the experiment can be reused as Lottie data instead of remaining canvas-only.</p>
               <button type="button" data-reset="dart-lottie-frame">Restart Lottie Preview</button>
             </div>
 
             <div class="source-strip">
-              <p>Inspect the generator and the resulting Lottie JSON structure from the same page.</p>
               <div class="source-actions">
                 <button type="button" class="mini-link" data-source="./generate-dartboard-lottie.js" data-source-label="Dartboard Lottie generator">Inspect Generator</button>
                 <button type="button" class="mini-link" data-source="./dartboard.json" data-source-label="Generated dartboard Lottie JSON">Inspect Generated JSON</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="spinoffs" class="section-card fade-up delay-3">
+        <div class="section-header">
+          <div>
+            <div class="eyebrow">Implementation Archive</div>
+            <h2>Supporting branches and variants.</h2>
+            <p>
+              These files capture readable rewrites, visual offshoots, and alternate shape passes that informed the final
+              implementations without becoming the main showcase entries.
+            </p>
+          </div>
+        </div>
+
+        <div class="spinoff-grid">
+          <article class="spinoff-card">
+            <div class="attempt-head">
+              <div>
+                <h3>Coin Reveal Readable Pass</h3>
+                <p>
+                  A readability-oriented branch of the coin recreation that keeps the same effect while making the implementation easier
+                  to inspect and reason about.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./coin-reveal-idle-readable.html">Open Variant</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">Readable Variant</div>
+                  <div class="stage-subtitle">`coin-reveal-idle-readable.html`</div>
+                </div>
+                <div class="badge">Refactor branch</div>
+              </div>
+              <div class="viewport">
+                <iframe id="coin-readable-frame" src="./coin-reveal-idle-readable.html" title="Coin Reveal readable variant"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <button type="button" data-reset="coin-readable-frame">Restart Variant</button>
+            </div>
+            <div class="source-strip">
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./coin-reveal-idle-readable.html" data-source-label="Coin Reveal readable variant">Inspect Source</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="spinoff-card">
+            <div class="attempt-head">
+              <div>
+                <h3>Coin Reveal IP3 Variant</h3>
+                <p>
+                  A visual spin-off of the coin animation with a different center treatment, preserved as a separate branch for comparison
+                  and future reuse.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./coin-reveal-idle-ip3.html">Open Variant</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">IP3 Variant</div>
+                  <div class="stage-subtitle">`coin-reveal-idle-ip3.html`</div>
+                </div>
+                <div class="badge">Visual offshoot</div>
+              </div>
+              <div class="viewport">
+                <iframe id="coin-ip3-frame" src="./coin-reveal-idle-ip3.html" title="Coin Reveal IP3 variant"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <button type="button" data-reset="coin-ip3-frame">Restart Variant</button>
+            </div>
+            <div class="source-strip">
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./coin-reveal-idle-ip3.html" data-source-label="Coin Reveal IP3 variant">Inspect Source</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="spinoff-card">
+            <div class="attempt-head">
+              <div>
+                <h3>GAx New Shapes Pass</h3>
+                <p>
+                  An alternate GAx implementation branch focused on revised shape treatment while keeping the broader timing and
+                  configuration-driven structure intact.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./gax-reimplemented-new-shapes.html">Open Variant</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">New Shapes Variant</div>
+                  <div class="stage-subtitle">`gax-reimplemented-new-shapes.html`</div>
+                </div>
+                <div class="badge">Shape iteration</div>
+              </div>
+              <div class="viewport">
+                <iframe id="gax-new-shapes-frame" src="./gax-reimplemented-new-shapes.html" title="GAx new shapes variant"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <button type="button" data-reset="gax-new-shapes-frame">Restart Variant</button>
+            </div>
+            <div class="source-strip">
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./gax-reimplemented-new-shapes.html" data-source-label="GAx new shapes variant">Inspect Source</button>
               </div>
             </div>
           </article>
@@ -1048,7 +1053,7 @@
             <div class="eyebrow">Workflow</div>
             <h2>How the implementation loop works in this repo.</h2>
             <p>
-              The GitHub Pages showcase is visual by design, but the implementation method matters too. These are the three phases the current work follows.
+              The showcase is visual by design, but the implementation method matters too. These are the three phases the current work follows.
             </p>
           </div>
         </div>
@@ -1075,7 +1080,7 @@
       </section>
 
       <div class="footer fade-up delay-3">
-        Built for GitHub Pages. Open the standalone files or inspect the source directly from this page when you want to review the implementation details.
+        Built for GitHub Pages. Open the standalone files or inspect the source directly from this page when you want to review the implementation.
       </div>
     </main>
   </div>
@@ -1085,7 +1090,7 @@
       <div class="source-head">
         <div>
           <h3 id="source-title">Source Inspector</h3>
-          <p>Open implementation files directly from the showcase to inspect the generated runtime, configuration, and export code.</p>
+          <p>Inspect implementation files without leaving the showcase.</p>
         </div>
         <button type="button" id="source-close">Close</button>
       </div>
@@ -1094,7 +1099,7 @@
         <div class="source-status" id="source-status">Choose a source file from one of the showcase cards.</div>
       </div>
       <div class="source-body">
-        <pre class="source-pre"><code id="source-code" class="source-empty">Choose "Inspect Source" on any card to load the file contents here.</code></pre>
+        <pre class="source-pre"><code id="source-code" class="source-empty">Choose an Inspect button on any card to load the file contents here.</code></pre>
       </div>
     </div>
   </div>
