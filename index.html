@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lottie Reverse Engineering Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08111f;
+    --bg-deep: #040916;
+    --panel: rgba(10, 19, 37, 0.84);
+    --panel-strong: rgba(12, 25, 48, 0.96);
+    --line: rgba(153, 196, 255, 0.16);
+    --line-strong: rgba(153, 196, 255, 0.28);
+    --text: #f4f7ff;
+    --muted: #a2b1d4;
+    --mint: #77e8c3;
+    --cyan: #72c7ff;
+    --amber: #f8c96d;
+    --rose: #ff8fa8;
+    --shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+    --radius-xl: 32px;
+    --radius-lg: 24px;
+    --radius-md: 18px;
+    --max: 1320px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: "IBM Plex Sans", "Avenir Next", sans-serif;
+    background:
+      radial-gradient(circle at 12% 12%, rgba(114, 199, 255, 0.18), transparent 22%),
+      radial-gradient(circle at 88% 10%, rgba(255, 143, 168, 0.14), transparent 18%),
+      radial-gradient(circle at 50% 110%, rgba(119, 232, 195, 0.16), transparent 28%),
+      linear-gradient(180deg, #0b1222 0%, var(--bg) 44%, var(--bg-deep) 100%);
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(circle at center, black 38%, transparent 88%);
+    opacity: 0.34;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  .shell {
+    position: relative;
+    width: min(calc(100% - 32px), var(--max));
+    margin: 0 auto;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 12px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 18px auto 0;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(6, 12, 24, 0.68);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--shadow);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .brand-mark {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--mint), var(--cyan));
+    box-shadow: 0 0 22px rgba(119, 232, 195, 0.72);
+  }
+
+  .brand-text {
+    min-width: 0;
+  }
+
+  .brand-title {
+    font: 700 0.94rem/1 "Space Grotesk", sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .brand-subtitle {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .nav a,
+  .button,
+  button {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 11px 15px;
+    text-decoration: none;
+    font: 600 0.9rem/1 "IBM Plex Sans", sans-serif;
+    cursor: pointer;
+    transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+  }
+
+  .button-primary {
+    background: linear-gradient(135deg, rgba(119, 232, 195, 0.22), rgba(114, 199, 255, 0.18));
+    border-color: rgba(119, 232, 195, 0.34);
+  }
+
+  .nav a:hover,
+  .button:hover,
+  button:hover {
+    transform: translateY(-1px);
+    border-color: var(--line-strong);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .hero {
+    padding: 72px 0 42px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.85fr);
+    gap: 28px;
+    align-items: stretch;
+  }
+
+  .hero-copy,
+  .hero-panel,
+  .section-card,
+  .compare-card,
+  .attempt-card,
+  .process-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(16px);
+  }
+
+  .hero-copy {
+    padding: 34px;
+  }
+
+  .hero-copy::after,
+  .hero-panel::after,
+  .section-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 38%);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 201, 109, 0.24);
+    background: rgba(248, 201, 109, 0.1);
+    color: #ffe2a0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-family: "Space Grotesk", sans-serif;
+    letter-spacing: -0.03em;
+  }
+
+  h1 {
+    margin-top: 18px;
+    font-size: clamp(2.7rem, 6vw, 5.2rem);
+    line-height: 0.96;
+  }
+
+  .hero-copy p {
+    max-width: 52rem;
+    margin: 18px 0 0;
+    color: var(--muted);
+    font-size: 1.02rem;
+    line-height: 1.7;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 32px;
+  }
+
+  .hero-panel {
+    padding: 28px;
+    display: grid;
+    gap: 18px;
+    align-content: start;
+  }
+
+  .hero-panel h2 {
+    font-size: 1.32rem;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .metric {
+    padding: 18px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .metric-value {
+    font: 700 1.5rem/1 "Space Grotesk", sans-serif;
+  }
+
+  .metric-label {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .hero-notes {
+    display: grid;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  main {
+    padding-bottom: 88px;
+  }
+
+  section {
+    margin-top: 34px;
+  }
+
+  .section-card {
+    padding: 34px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 30px;
+  }
+
+  .section-header > div:first-child {
+    max-width: 760px;
+    min-width: 0;
+  }
+
+  .section-header h2 {
+    margin-top: 14px;
+    max-width: 18ch;
+    font-size: clamp(2rem, 3.3vw, 3.1rem);
+    line-height: 1.04;
+  }
+
+  .section-header p {
+    max-width: 46rem;
+    margin: 14px 0 0;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .pill {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+
+  .compare-stack,
+  .attempt-grid,
+  .process-grid {
+    display: grid;
+    gap: 24px;
+  }
+
+  .compare-card,
+  .attempt-card,
+  .process-card {
+    padding: 26px;
+    background: var(--panel-strong);
+    border-radius: var(--radius-lg);
+  }
+
+  .compare-head,
+  .attempt-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+
+  .compare-head p,
+  .attempt-head p,
+  .process-card p {
+    margin: 8px 0 0;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .compare-links,
+  .attempt-links {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .compare-links .mini-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 14px;
+    border-color: rgba(114, 199, 255, 0.18);
+    background: linear-gradient(135deg, rgba(114, 199, 255, 0.14), rgba(119, 232, 195, 0.08));
+    color: #eaf4ff;
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .compare-links .mini-link::after {
+    content: "->";
+    color: rgba(234, 244, 255, 0.72);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    transition: transform 140ms ease, color 140ms ease;
+  }
+
+  .compare-links .mini-link:hover {
+    border-color: rgba(119, 232, 195, 0.3);
+    background: linear-gradient(135deg, rgba(114, 199, 255, 0.2), rgba(119, 232, 195, 0.13));
+  }
+
+  .compare-links .mini-link:hover::after {
+    transform: translateX(2px);
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .source-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 20px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.035);
+    flex-wrap: wrap;
+  }
+
+  .source-strip p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .source-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .mini-link {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.85rem;
+    text-decoration: none;
+    padding: 9px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, color 140ms ease;
+  }
+
+  .mini-link:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .stage-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .stage {
+    overflow: hidden;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(6, 12, 24, 0.92);
+  }
+
+  .stage-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  }
+
+  .stage-title {
+    font-weight: 700;
+  }
+
+  .stage-subtitle {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+
+  .badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    white-space: nowrap;
+  }
+
+  .viewport {
+    aspect-ratio: 1 / 1;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(114, 199, 255, 0.08), transparent 36%),
+      #08111f;
+  }
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #08111f;
+  }
+
+  .compare-foot,
+  .attempt-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+
+  .compare-foot p,
+  .attempt-foot p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .attempt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .process-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .process-card {
+    min-height: 100%;
+  }
+
+  .process-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, rgba(119, 232, 195, 0.18), rgba(114, 199, 255, 0.18));
+    border: 1px solid rgba(119, 232, 195, 0.24);
+    font: 700 0.95rem/1 "Space Grotesk", sans-serif;
+  }
+
+  .process-card h3 {
+    font-size: 1.16rem;
+  }
+
+  .footer {
+    margin: 44px 0 0;
+    padding: 28px 0 30px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 0.92rem;
+  }
+
+  .source-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: none;
+    align-items: stretch;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(2, 6, 16, 0.74);
+    backdrop-filter: blur(12px);
+  }
+
+  .source-modal.is-open {
+    display: flex;
+  }
+
+  .source-dialog {
+    width: min(1200px, 100%);
+    height: min(88vh, 100%);
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    overflow: hidden;
+    background: rgba(6, 12, 24, 0.98);
+    box-shadow: var(--shadow);
+  }
+
+  .source-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  }
+
+  .source-head h3 {
+    font-size: 1.05rem;
+  }
+
+  .source-head p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .source-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    flex-wrap: wrap;
+  }
+
+  .source-path {
+    color: #dce6ff;
+    font: 600 0.9rem/1.4 "IBM Plex Sans", sans-serif;
+    word-break: break-all;
+  }
+
+  .source-status {
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  .source-body {
+    min-height: 0;
+    overflow: auto;
+    background:
+      linear-gradient(180deg, rgba(114, 199, 255, 0.04), transparent 18%),
+      #08111f;
+  }
+
+  .source-pre {
+    margin: 0;
+    padding: 20px;
+    color: #e8efff;
+    font: 0.9rem/1.62 "SFMono-Regular", "Menlo", "Monaco", monospace;
+    white-space: pre;
+    min-height: 100%;
+  }
+
+  .source-empty {
+    color: var(--muted);
+  }
+
+  body.modal-open {
+    overflow: hidden;
+  }
+
+  .fade-up {
+    opacity: 0;
+    transform: translateY(24px);
+    animation: fadeUp 700ms ease forwards;
+  }
+
+  .delay-1 { animation-delay: 80ms; }
+  .delay-2 { animation-delay: 160ms; }
+  .delay-3 { animation-delay: 240ms; }
+
+  @keyframes fadeUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 1080px) {
+    .hero-grid,
+    .attempt-grid,
+    .process-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stage-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 780px) {
+    .shell {
+      width: min(calc(100% - 20px), var(--max));
+    }
+
+    .topbar {
+      position: static;
+      border-radius: 26px;
+      padding: 14px;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .nav {
+      justify-content: flex-start;
+    }
+
+    .hero {
+      padding-top: 26px;
+    }
+
+    .hero-copy,
+    .hero-panel,
+    .section-card {
+      padding: 24px;
+    }
+
+    .compare-card,
+    .attempt-card,
+    .process-card {
+      padding: 20px;
+    }
+
+    .section-header,
+    .compare-head,
+    .attempt-head,
+    .compare-foot,
+    .attempt-foot,
+    .source-strip,
+    .source-head,
+    .source-toolbar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .metric-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .section-header h2 {
+      max-width: 100%;
+      font-size: clamp(1.85rem, 8vw, 2.45rem);
+      line-height: 1.06;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar fade-up">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-text">
+          <div class="brand-title">Lottie Reverse Playground</div>
+          <div class="brand-subtitle">Canvas reimplementations, side-by-side comparisons, and round-trip experiments</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Sections">
+        <a href="#successes">Successful Conversions</a>
+        <a href="#attempts">New Attempts</a>
+        <a href="#process">Process</a>
+        <a href="./compare-all.html">All Comparisons</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="hero-grid">
+        <article class="hero-copy fade-up delay-1">
+          <div class="eyebrow">GitHub Pages Showcase</div>
+          <h1>Reverse-engineering Lottie into canvas, with side-by-side verification.</h1>
+          <p>
+            This site combines validated canvas recreations with ongoing motion experiments. The recreation section places each source
+            `.lottie` asset beside its canvas implementation for direct visual verification. The dartboard section shows the adjacent
+            workflow: starting from a high-level motion brief, iterating on the canvas implementation, and reusing the result as generated Lottie JSON.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#successes">See Successful Conversions</a>
+            <a class="button" href="#attempts">See New Animation Attempts</a>
+          </div>
+        </article>
+
+        <aside class="hero-panel fade-up delay-2">
+          <h2>What this showcase covers</h2>
+          <div class="metric-grid">
+            <div class="metric">
+              <div class="metric-value">2</div>
+              <div class="metric-label">Completed canvas recreations</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">1</div>
+              <div class="metric-label">Canvas-to-Lottie round-trip attempt</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">60 / 100</div>
+              <div class="metric-label">Frame rates preserved from source assets</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">301 / 1600 / 300</div>
+              <div class="metric-label">Frame counts across the showcased pieces</div>
+            </div>
+          </div>
+          <div class="hero-notes">
+            <div>The verified recreations focus on timing fidelity, draw order, silhouette stability, and motion continuity.</div>
+            <div>The experiment section captures an LLM-assisted prototyping loop: provide a motion brief, review the generated pass, then iteratively refine until the runtime behavior is acceptable.</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <main>
+      <section id="successes" class="section-card fade-up delay-2">
+        <div class="section-header">
+          <div>
+            <div class="eyebrow">Verified Canvas Recreations</div>
+            <h2>Source Lottie on the left, canvas runtime on the right.</h2>
+            <p>
+              These are the completed recreation pairs. Each one keeps the source asset visible so the implementation can be evaluated
+              directly against the original rather than viewed in isolation.
+            </p>
+          </div>
+          <div class="pill-row" aria-label="Highlights">
+            <div class="pill">Direct visual comparison</div>
+            <div class="pill">Reusable canvas helpers</div>
+            <div class="pill">Timing preserved</div>
+          </div>
+        </div>
+
+        <div class="compare-stack">
+          <article class="compare-card">
+            <div class="compare-head">
+              <div>
+                <h3>Coin Reveal Idle</h3>
+                <p>
+                  A compact reverse-engineering case study. The canvas implementation reconstructs easing evaluation, path interpolation,
+                  transform sampling, and layered compositing directly in plain HTML canvas code.
+                </p>
+              </div>
+              <div class="compare-links">
+                <a class="mini-link" href="./compare-side-by-side.html">Open Compare Page</a>
+                <a class="mini-link" href="./coin-reveal-idle.html">Open Canvas File</a>
+              </div>
+            </div>
+
+            <div class="stage-grid">
+              <div class="stage">
+                <div class="stage-meta">
+                  <div>
+                    <div class="stage-title">Original</div>
+                    <div class="stage-subtitle">`preview-original.html?embed=1`</div>
+                  </div>
+                  <div class="badge">Source `.lottie`</div>
+                </div>
+                <div class="viewport">
+                  <iframe id="coin-original-frame" src="./preview-original.html?embed=1" title="Coin Reveal original preview"></iframe>
+                </div>
+              </div>
+
+              <div class="stage">
+                <div class="stage-meta">
+                  <div>
+                    <div class="stage-title">Canvas Reconstruction</div>
+                    <div class="stage-subtitle">`coin-reveal-idle.html`</div>
+                  </div>
+                  <div class="badge">Pure canvas</div>
+                </div>
+                <div class="viewport">
+                  <iframe id="coin-canvas-frame" src="./coin-reveal-idle.html" title="Coin Reveal canvas reconstruction"></iframe>
+                </div>
+              </div>
+            </div>
+
+            <div class="compare-foot">
+              <p>Useful as a minimal example of the path from extracted Lottie data to a hand-authored canvas renderer.</p>
+              <button type="button" data-reset="coin-original-frame,coin-canvas-frame">Restart Coin Pair</button>
+            </div>
+
+            <div class="source-strip">
+              <p>Inspect the implementation artifacts behind the recreation and comparison flow.</p>
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./coin-reveal-idle.html" data-source-label="Coin Reveal canvas source">Inspect Canvas Source</button>
+                <button type="button" class="mini-link" data-source="./compare-side-by-side.html" data-source-label="Coin Reveal comparison page">Inspect Compare Page</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="compare-card">
+            <div class="compare-head">
+              <div>
+                <h3>GAx</h3>
+                <p>
+                  A more data-heavy case. The recreation reduces a nested Lottie structure into reusable configuration data and a custom
+                  renderer that samples transforms, opacity, and vector paths at runtime.
+                </p>
+              </div>
+              <div class="compare-links">
+                <a class="mini-link" href="./compare-gax-side-by-side.html">Open Compare Page</a>
+                <a class="mini-link" href="./gax-reimplemented.html">Open Canvas File</a>
+              </div>
+            </div>
+
+            <div class="stage-grid">
+              <div class="stage">
+                <div class="stage-meta">
+                  <div>
+                    <div class="stage-title">Original</div>
+                    <div class="stage-subtitle">`preview-gax-original.html?embed=1`</div>
+                  </div>
+                  <div class="badge">Source `.lottie`</div>
+                </div>
+                <div class="viewport">
+                  <iframe id="gax-original-frame" src="./preview-gax-original.html?embed=1" title="GAx original preview"></iframe>
+                </div>
+              </div>
+
+              <div class="stage">
+                <div class="stage-meta">
+                  <div>
+                    <div class="stage-title">Canvas Reconstruction</div>
+                    <div class="stage-subtitle">`gax-reimplemented.html`</div>
+                  </div>
+                  <div class="badge">Config-driven canvas</div>
+                </div>
+                <div class="viewport">
+                  <iframe id="gax-canvas-frame" src="./gax-reimplemented.html" title="GAx canvas reconstruction"></iframe>
+                </div>
+              </div>
+            </div>
+
+            <div class="compare-foot">
+              <p>Useful for showing how an asset-heavy source can still be normalized into a maintainable canvas implementation.</p>
+              <button type="button" data-reset="gax-original-frame,gax-canvas-frame">Restart GAx Pair</button>
+            </div>
+
+            <div class="source-strip">
+              <p>Open the implementation and extracted configuration without leaving the showcase.</p>
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./gax-reimplemented.html" data-source-label="GAx canvas source">Inspect Canvas Source</button>
+                <button type="button" class="mini-link" data-source="./gax-config.js" data-source-label="GAx extracted config">Inspect Config</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="attempts" class="section-card fade-up delay-3">
+        <div class="section-header">
+          <div>
+            <div class="eyebrow">LLM-Guided Motion Experiments</div>
+            <h2>Canvas-first prototyping, then reuse back into Lottie.</h2>
+            <p>
+              This section covers the more exploratory side of the repo. Instead of starting from an existing `.lottie`, the dartboard
+              animation begins from a high-level motion brief, is refined through repeated LLM iterations, and is then converted back
+              into a Lottie JSON file through a generator script.
+            </p>
+          </div>
+          <div class="pill-row">
+            <div class="pill">Canvas-first prototype</div>
+            <div class="pill">Generated `dartboard.json`</div>
+            <div class="pill">Round-trip workflow</div>
+          </div>
+        </div>
+
+        <div class="attempt-grid">
+          <article class="attempt-card">
+            <div class="attempt-head">
+              <div>
+                <h3>Dartboard Canvas Attempt</h3>
+                <p>
+                  A hand-built board, dart motion, impact effects, and timing model written directly in canvas. This is the prototype
+                  implementation prior to export. The process starts from a rough motion brief and is iteratively refined until the
+                  resulting movement is structurally and visually acceptable.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./dartboard.html">Open Canvas</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">Canvas Prototype</div>
+                  <div class="stage-subtitle">`dartboard.html`</div>
+                </div>
+                <div class="badge">Authoring stage</div>
+              </div>
+              <div class="viewport">
+                <iframe id="dart-canvas-frame" src="./dartboard.html" title="Dartboard canvas prototype"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <p>The goal here is not only visual output, but also developing a motion model that can be authored and tuned directly in code.</p>
+              
+              <button type="button" data-reset="dart-canvas-frame">Restart Canvas Attempt</button>
+            </div>
+
+            <div class="source-strip">
+              <p>Inspect the canvas prototype produced by the prompt-and-refine loop.</p>
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./dartboard.html" data-source-label="Dartboard canvas attempt">Inspect Canvas Source</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="attempt-card">
+            <div class="attempt-head">
+              <div>
+                <h3>Dartboard Reused as Lottie</h3>
+                <p>
+                  The same animation is exported into Lottie JSON with the generator script and then previewed with a Lottie player.
+                  This demonstrates the reverse direction as part of the showcase: prototype in canvas first, then reuse the result in Lottie form.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./preview-dartboard-lottie.html">Open Preview</a>
+                <a class="mini-link" href="./generate-dartboard-lottie.js">Open Generator</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">Generated Lottie Preview</div>
+                  <div class="stage-subtitle">`preview-dartboard-lottie.html?embed=1`</div>
+                </div>
+                <div class="badge">Round-trip output</div>
+              </div>
+              <div class="viewport">
+                <iframe id="dart-lottie-frame" src="./preview-dartboard-lottie.html?embed=1" title="Dartboard generated Lottie preview"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <p>This is the step that shows how the experiment can be reused as Lottie data instead of remaining canvas-only.</p>
+              <button type="button" data-reset="dart-lottie-frame">Restart Lottie Preview</button>
+            </div>
+
+            <div class="source-strip">
+              <p>Inspect the generator and the resulting Lottie JSON structure from the same page.</p>
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./generate-dartboard-lottie.js" data-source-label="Dartboard Lottie generator">Inspect Generator</button>
+                <button type="button" class="mini-link" data-source="./dartboard.json" data-source-label="Generated dartboard Lottie JSON">Inspect Generated JSON</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="process" class="section-card fade-up delay-3">
+        <div class="section-header">
+          <div>
+            <div class="eyebrow">Workflow</div>
+            <h2>How the implementation loop works in this repo.</h2>
+            <p>
+              The GitHub Pages showcase is visual by design, but the implementation method matters too. These are the three phases the current work follows.
+            </p>
+          </div>
+        </div>
+
+        <div class="process-grid">
+          <article class="process-card">
+            <div class="process-number">01</div>
+            <h3>Start from a motion brief</h3>
+            <p>Begin with a high-level motion specification such as “a coin drops, rotates several times, then settles,” and let the LLM produce an initial implementation pass.</p>
+          </article>
+
+          <article class="process-card">
+            <div class="process-number">02</div>
+            <h3>Refine iteratively</h3>
+            <p>Review the motion, identify timing or behavior issues, and iterate with the LLM until the rotation, landing, pacing, and continuity match the intended result.</p>
+          </article>
+
+          <article class="process-card">
+            <div class="process-number">03</div>
+            <h3>Reuse the implementation</h3>
+            <p>Once the canvas version is stable, preserve the reusable structure and, for experiments like the dartboard, export the motion back into Lottie JSON output.</p>
+          </article>
+        </div>
+      </section>
+
+      <div class="footer fade-up delay-3">
+        Built for GitHub Pages. Open the standalone files or inspect the source directly from this page when you want to review the implementation details.
+      </div>
+    </main>
+  </div>
+
+  <div class="source-modal" id="source-modal" aria-hidden="true">
+    <div class="source-dialog" role="dialog" aria-modal="true" aria-labelledby="source-title">
+      <div class="source-head">
+        <div>
+          <h3 id="source-title">Source Inspector</h3>
+          <p>Open implementation files directly from the showcase to inspect the generated runtime, configuration, and export code.</p>
+        </div>
+        <button type="button" id="source-close">Close</button>
+      </div>
+      <div class="source-toolbar">
+        <div class="source-path" id="source-path">No file selected</div>
+        <div class="source-status" id="source-status">Choose a source file from one of the showcase cards.</div>
+      </div>
+      <div class="source-body">
+        <pre class="source-pre"><code id="source-code" class="source-empty">Choose "Inspect Source" on any card to load the file contents here.</code></pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+function resetFrame(id) {
+  const frame = document.getElementById(id);
+  if (!frame) return;
+  const src = frame.getAttribute('src');
+  frame.setAttribute('src', src);
+}
+
+for (const button of document.querySelectorAll('[data-reset]')) {
+  button.addEventListener('click', () => {
+    const ids = button.getAttribute('data-reset').split(',');
+    for (const id of ids) resetFrame(id.trim());
+  });
+}
+
+const sourceModal = document.getElementById('source-modal');
+const sourceClose = document.getElementById('source-close');
+const sourcePath = document.getElementById('source-path');
+const sourceStatus = document.getElementById('source-status');
+const sourceCode = document.getElementById('source-code');
+let lastFocusedButton = null;
+
+function openSourceModal() {
+  sourceModal.classList.add('is-open');
+  sourceModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+}
+
+function closeSourceModal() {
+  sourceModal.classList.remove('is-open');
+  sourceModal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+  if (lastFocusedButton) lastFocusedButton.focus();
+}
+
+async function loadSource(button) {
+  const path = button.getAttribute('data-source');
+  const label = button.getAttribute('data-source-label') || path;
+  lastFocusedButton = button;
+  openSourceModal();
+  sourcePath.textContent = path;
+  sourceStatus.textContent = `Loading ${label}...`;
+  sourceCode.textContent = '';
+  sourceCode.classList.remove('source-empty');
+
+  try {
+    const response = await fetch(path, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    sourcePath.textContent = label;
+    sourceStatus.textContent = path;
+    sourceCode.textContent = text;
+  } catch (error) {
+    sourcePath.textContent = label;
+    sourceStatus.textContent = path;
+    sourceCode.textContent = `Unable to load this file.\n\n${String(error)}`;
+    sourceCode.classList.add('source-empty');
+  }
+}
+
+for (const button of document.querySelectorAll('[data-source]')) {
+  button.addEventListener('click', () => {
+    loadSource(button);
+  });
+}
+
+sourceClose.addEventListener('click', closeSourceModal);
+
+sourceModal.addEventListener('click', (event) => {
+  if (event.target === sourceModal) closeSourceModal();
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && sourceModal.classList.contains('is-open')) {
+    closeSourceModal();
+  }
+});
+</script>
+</body>
+</html>

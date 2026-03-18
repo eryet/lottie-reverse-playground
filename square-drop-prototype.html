@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Square Drop Motion Prototype</title>
+<style>
+  :root {
+    --bg: #0a1120;
+    --panel: rgba(12, 20, 38, 0.88);
+    --panel-line: rgba(150, 182, 235, 0.16);
+    --text: #f3f7ff;
+    --muted: #9db0d2;
+    --accent: #79e2c3;
+    --square: #74b9ff;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    padding: 28px;
+    color: var(--text);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(116, 185, 255, 0.14), transparent 26%),
+      radial-gradient(circle at top right, rgba(121, 226, 195, 0.12), transparent 24%),
+      linear-gradient(180deg, #10192d 0%, var(--bg) 100%);
+  }
+
+  .shell {
+    width: min(100%, 1100px);
+    margin: 0 auto;
+    display: grid;
+    gap: 20px;
+  }
+
+  .hero,
+  .viewer,
+  .notes {
+    border: 1px solid var(--panel-line);
+    border-radius: 24px;
+    background: var(--panel);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(16px);
+  }
+
+  .hero {
+    padding: 24px 26px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(116, 185, 255, 0.1);
+    border: 1px solid rgba(116, 185, 255, 0.24);
+    color: #d7ebff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin-top: 14px;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+  }
+
+  .hero p {
+    max-width: 52rem;
+    margin-top: 14px;
+    color: var(--muted);
+    line-height: 1.72;
+    font-size: 1rem;
+  }
+
+  .chips {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    padding: 9px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .viewer {
+    padding: 20px;
+  }
+
+  .viewer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .viewer-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .viewer-subtitle {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .status {
+    padding: 10px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  button {
+    appearance: none;
+    border: 1px solid rgba(121, 226, 195, 0.26);
+    background: rgba(121, 226, 195, 0.12);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font: inherit;
+    cursor: pointer;
+    transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+  }
+
+  button:hover {
+    transform: translateY(-1px);
+    background: rgba(121, 226, 195, 0.18);
+    border-color: rgba(121, 226, 195, 0.4);
+  }
+
+  .stage {
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      radial-gradient(circle at 50% 18%, rgba(116, 185, 255, 0.08), transparent 28%),
+      #0a111d;
+  }
+
+  canvas {
+    display: block;
+    width: min(100%, 720px);
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    max-width: 100%;
+  }
+
+  .notes {
+    padding: 22px;
+  }
+
+  .notes h2 {
+    font-size: 1.2rem;
+    letter-spacing: -0.03em;
+  }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .note-card {
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .note-card h3 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+
+  .note-card p {
+    color: var(--muted);
+    line-height: 1.65;
+    font-size: 0.92rem;
+  }
+
+  .code {
+    color: #d7ebff;
+    font-family: "SFMono-Regular", Menlo, monospace;
+    font-size: 0.88rem;
+  }
+
+  @media (max-width: 920px) {
+    .notes-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    body {
+      padding: 18px;
+    }
+
+    .hero,
+    .viewer,
+    .notes {
+      padding: 18px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Motion Prototype</div>
+      <h1>Square drop with squash, rebound, and settle.</h1>
+      <p>
+        This simple prototype uses three explicit phases: fall, impact rebound, and settle. The motion is intentionally clean and easy
+        to tune so later review passes can focus on timing and feel rather than structure.
+      </p>
+    </div>
+    <div class="chips">
+      <div class="chip">1.5s total</div>
+      <div class="chip">60fps</div>
+      <div class="chip">Canvas-first</div>
+      <div class="chip">Very readable</div>
+    </div>
+  </section>
+
+  <section class="viewer">
+    <div class="viewer-head">
+      <div>
+        <div class="viewer-title">Preview</div>
+        <div class="viewer-subtitle">Single-shape motion pass with explicit timing constants.</div>
+      </div>
+      <div class="controls">
+        <div class="status" id="phase-label">Phase: Fall</div>
+        <button type="button" id="restart">Restart</button>
+      </div>
+    </div>
+    <div class="stage">
+      <canvas id="c" width="1080" height="1080"></canvas>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>Primary tuning constants</h2>
+    <div class="notes-grid">
+      <article class="note-card">
+        <h3>Fall speed</h3>
+        <p>
+          Adjust <span class="code">DROP_DURATION</span>, <span class="code">DROP_START_Y</span>, and <span class="code">GROUND_Y</span>
+          to control how quickly the square reaches the floor and where contact happens.
+        </p>
+      </article>
+      <article class="note-card">
+        <h3>Squash amount</h3>
+        <p>
+          Adjust <span class="code">IMPACT_SQUASH_X</span>, <span class="code">IMPACT_SQUASH_Y</span>, <span class="code">BLOCK_DEPTH_X</span>,
+          and <span class="code">BLOCK_DEPTH_Y</span> to control impact deformation and how dimensional the block feels.
+        </p>
+      </article>
+      <article class="note-card">
+        <h3>Settle timing</h3>
+        <p>
+          Adjust <span class="code">REBOUND_DURATION</span>, <span class="code">REBOUND_HEIGHT</span>, and <span class="code">SETTLE_DURATION</span>
+          to control the rebound size and how long the square takes to come to rest.
+        </p>
+      </article>
+    </div>
+  </section>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const phaseLabel = document.getElementById('phase-label');
+
+const W = 1080;
+const H = 1080;
+const CX = W / 2;
+const FPS = 60;
+const TOTAL_SECONDS = 1.5;
+const TOTAL_FRAMES = Math.round(FPS * TOTAL_SECONDS);
+
+// =============================================
+// TUNING CONSTANTS
+// =============================================
+const SQUARE_SIZE = 180;
+const GROUND_Y = 820;
+const DROP_START_Y = -200;
+
+const DROP_DURATION = 0.62;
+const REBOUND_DURATION = 0.38;
+const SETTLE_DURATION = TOTAL_SECONDS - DROP_DURATION - REBOUND_DURATION;
+
+const IMPACT_SQUASH_X = 1.22;
+const IMPACT_SQUASH_Y = 0.74;
+const REBOUND_HEIGHT = 72;
+const FINAL_SETTLE_BOUNCE = 10;
+const BLOCK_DEPTH_X = 34;
+const BLOCK_DEPTH_Y = -26;
+
+// =============================================
+// EASING
+// =============================================
+function cubicBezier(x1, y1, x2, y2) {
+  return function(t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+
+    const cx = 3 * x1;
+    const bx = 3 * (x2 - x1) - cx;
+    const ax = 1 - cx - bx;
+    const cy = 3 * y1;
+    const by = 3 * (y2 - y1) - cy;
+    const ay = 1 - cy - by;
+
+    function sampleX(tt) { return ((ax * tt + bx) * tt + cx) * tt; }
+    function sampleY(tt) { return ((ay * tt + by) * tt + cy) * tt; }
+
+    let tt = t;
+    for (let i = 0; i < 8; i++) {
+      const x = sampleX(tt) - t;
+      const d = (3 * ax * tt + 2 * bx) * tt + cx;
+      if (Math.abs(x) < 1e-7 || Math.abs(d) < 1e-7) break;
+      tt -= x / d;
+    }
+
+    return sampleY(tt);
+  };
+}
+
+function clamp01(v) {
+  return Math.max(0, Math.min(1, v));
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function mix(a, b, t, easeFn) {
+  const tt = easeFn ? easeFn(clamp01(t)) : clamp01(t);
+  return lerp(a, b, tt);
+}
+
+const easeIn = cubicBezier(0.55, 0.05, 0.67, 0.19);
+const easeOut = cubicBezier(0.17, 0.84, 0.44, 1);
+const easeInOut = cubicBezier(0.65, 0, 0.35, 1);
+
+// =============================================
+// DRAWING
+// =============================================
+function drawBackground() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0f1829');
+  bg.addColorStop(1, '#0a1120');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(CX, 260, 20, CX, 260, 300);
+  glow.addColorStop(0, 'rgba(116, 185, 255, 0.11)');
+  glow.addColorStop(1, 'rgba(116, 185, 255, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawFloor() {
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+  ctx.fillRect(160, GROUND_Y + SQUARE_SIZE / 2 + 2, 760, 2);
+}
+
+function drawShadow(y, widthScale) {
+  const distance = clamp01((GROUND_Y - y) / 460);
+  const width = lerp(170, 82, distance) * widthScale;
+  const height = lerp(24, 14, distance);
+
+  ctx.save();
+  ctx.translate(CX, GROUND_Y + SQUARE_SIZE / 2 + 8);
+  ctx.scale(1, 0.42);
+  const shadow = ctx.createRadialGradient(0, 0, 0, 0, 0, width * 0.65);
+  shadow.addColorStop(0, 'rgba(5, 10, 18, 0.4)');
+  shadow.addColorStop(1, 'rgba(5, 10, 18, 0)');
+  ctx.fillStyle = shadow;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width, height, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSquare(x, y, scaleX, scaleY, depthScale) {
+  const size = SQUARE_SIZE;
+  const half = size / 2;
+  const depthX = BLOCK_DEPTH_X * depthScale;
+  const depthY = BLOCK_DEPTH_Y * depthScale;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scaleX, scaleY);
+
+  const topFill = ctx.createLinearGradient(-half, -half, half + depthX, -half + depthY);
+  topFill.addColorStop(0, '#d6ecff');
+  topFill.addColorStop(1, '#91caff');
+
+  const sideFill = ctx.createLinearGradient(half, -half, half + depthX, half + depthY);
+  sideFill.addColorStop(0, '#3f82e8');
+  sideFill.addColorStop(1, '#2357ad');
+
+  const frontFill = ctx.createLinearGradient(-half, -half, half, half);
+  frontFill.addColorStop(0, '#cae5ff');
+  frontFill.addColorStop(0.4, '#74b9ff');
+  frontFill.addColorStop(1, '#3573db');
+
+  // Top plane
+  ctx.fillStyle = topFill;
+  ctx.beginPath();
+  ctx.moveTo(-half, -half);
+  ctx.lineTo(half, -half);
+  ctx.lineTo(half + depthX, -half + depthY);
+  ctx.lineTo(-half + depthX, -half + depthY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Side plane
+  ctx.fillStyle = sideFill;
+  ctx.beginPath();
+  ctx.moveTo(half, -half);
+  ctx.lineTo(half, half);
+  ctx.lineTo(half + depthX, half + depthY);
+  ctx.lineTo(half + depthX, -half + depthY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Front face
+  ctx.fillStyle = frontFill;
+  ctx.fillRect(-half, -half, size, size);
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(-half + 4, -half + 4, size - 8, size - 8);
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-half, -half);
+  ctx.lineTo(-half + depthX, -half + depthY);
+  ctx.lineTo(half + depthX, -half + depthY);
+  ctx.lineTo(half + depthX, half + depthY);
+  ctx.stroke();
+
+  const frontShade = ctx.createLinearGradient(-half, -half, half, half);
+  frontShade.addColorStop(0, 'rgba(255,255,255,0.12)');
+  frontShade.addColorStop(0.55, 'rgba(255,255,255,0)');
+  frontShade.addColorStop(1, 'rgba(0,0,0,0.18)');
+  ctx.fillStyle = frontShade;
+  ctx.fillRect(-half, -half, size, size);
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.fillRect(-half + 22, -half + 18, size * 0.14, size - 36);
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.beginPath();
+  ctx.moveTo(-half + 20, -half + 18);
+  ctx.lineTo(half - 18, -half + 18);
+  ctx.lineTo(half - 4, -half + depthY + 8);
+  ctx.lineTo(-half + 34, -half + depthY + 8);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// =============================================
+// MOTION MODEL
+// =============================================
+function getPose(time) {
+  if (time < DROP_DURATION) {
+    const t = time / DROP_DURATION;
+    const y = mix(DROP_START_Y, GROUND_Y, t, easeIn);
+    const lateImpact = clamp01((t - 0.82) / 0.18);
+
+    return {
+      phase: 'Fall',
+      y,
+      scaleX: lerp(1, IMPACT_SQUASH_X, lateImpact),
+      scaleY: lerp(1.02, IMPACT_SQUASH_Y, lateImpact),
+      depthScale: lerp(1, 0.92, lateImpact),
+      shadowScale: 1,
+    };
+  }
+
+  if (time < DROP_DURATION + REBOUND_DURATION) {
+    const t = (time - DROP_DURATION) / REBOUND_DURATION;
+    const arc = Math.sin(t * Math.PI);
+    const y = GROUND_Y - arc * REBOUND_HEIGHT;
+
+    return {
+      phase: 'Rebound',
+      y,
+      scaleX: mix(IMPACT_SQUASH_X, 0.96, t, easeOut),
+      scaleY: mix(IMPACT_SQUASH_Y, 1.04, t, easeOut),
+      depthScale: mix(0.92, 1.04, t, easeOut),
+      shadowScale: 1 + arc * 0.08,
+    };
+  }
+
+  const t = clamp01((time - DROP_DURATION - REBOUND_DURATION) / Math.max(1e-6, SETTLE_DURATION));
+  const microBounce = Math.sin(t * Math.PI) * FINAL_SETTLE_BOUNCE * Math.exp(-3.2 * t);
+  const settleWave = Math.sin(t * Math.PI * 2) * Math.exp(-3.5 * t);
+
+  return {
+    phase: 'Settle',
+    y: GROUND_Y - microBounce,
+    scaleX: 1 + 0.04 * settleWave,
+    scaleY: 1 - 0.04 * Math.abs(settleWave),
+    depthScale: 1 + 0.03 * settleWave,
+    shadowScale: 1,
+  };
+}
+
+function render(frame) {
+  const time = (frame / FPS) % TOTAL_SECONDS;
+  const pose = getPose(time);
+
+  drawBackground();
+  drawFloor();
+  drawShadow(pose.y, pose.shadowScale);
+  drawSquare(CX, pose.y, pose.scaleX, pose.scaleY, pose.depthScale);
+  phaseLabel.textContent = `Phase: ${pose.phase}`;
+}
+
+// =============================================
+// LOOP
+// =============================================
+let start = performance.now();
+
+function tick(now) {
+  const elapsed = (now - start) / 1000;
+  const frame = Math.floor((elapsed * FPS) % TOTAL_FRAMES);
+  render(frame);
+  requestAnimationFrame(tick);
+}
+
+document.getElementById('restart').addEventListener('click', () => {
+  start = performance.now();
+});
+
+render(0);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
