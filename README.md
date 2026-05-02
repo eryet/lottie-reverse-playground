@@ -7,6 +7,7 @@ It contains:
 - Original `.lottie` packages in [`lottie/`](./lottie)
 - Extracted JSON payloads in [`extracted/`](./extracted)
 - Hand-rebuilt canvas versions such as [`coin-reveal-idle.html`](./coin-reveal-idle.html) and [`gax-reimplemented.html`](./gax-reimplemented.html)
+- Canvas-first motion prototypes such as [`starfield-interactive.html`](./starfield-interactive.html), [`lucky-spin-wheel-prototype.html`](./lucky-spin-wheel-prototype.html), [`milk-tea-drop-prototype.html`](./milk-tea-drop-prototype.html), and [`dartboard.html`](./dartboard.html)
 - Side-by-side comparison pages such as [`compare-side-by-side.html`](./compare-side-by-side.html), [`compare-gax-side-by-side.html`](./compare-gax-side-by-side.html), and [`compare-all.html`](./compare-all.html)
 
 The goal is not only to copy the final look, but to understand how the source animation is built and then recreate the same motion in plain canvas code.
@@ -58,6 +59,23 @@ This one is a good example of simplifying a more nested Lottie:
 - flatten repeated vector asset data into a config object
 - keep only the parts needed for reproduction
 - write a custom animation loop that samples position, rotation, opacity, and path data
+
+### Canvas-First Motion Prototypes
+
+- Lucky spin wheel: [`lucky-spin-wheel-prototype.html`](./lucky-spin-wheel-prototype.html)
+- Lucky spin wheel loop fallback: [`lucky-spin-wheel-prototype.html?mode=loop`](./lucky-spin-wheel-prototype.html?mode=loop)
+- Interactive starfield: [`starfield-interactive.html`](./starfield-interactive.html)
+- Milk tea drop: [`milk-tea-drop-prototype.html`](./milk-tea-drop-prototype.html)
+- Dartboard canvas attempt: [`dartboard.html`](./dartboard.html)
+- Dartboard Lottie generator: [`generate-dartboard-lottie.js`](./generate-dartboard-lottie.js)
+
+The lucky wheel pass spins when the center button is pressed, lands under a fixed pointer, avoids repeating the previous result, and adds a short confetti/result reveal. Its `?mode=loop` fallback keeps the original auto-spinning loop.
+
+The starfield pass uses 2D canvas for a full-screen interactive space scene: pointer gravity, shockwaves, drag trails, layered star depth, shooting stars, and a vendored Tweakpane panel for tuning force, trail, link, wave, and star parameters.
+
+Tweakpane is vendored under [`vendor/tweakpane/`](./vendor/tweakpane) so the starfield page can run directly from `file://` without internet access.
+
+The milk tea pass starts from a motion brief instead of a source Lottie: a cup drops in, bounces twice, pearls pop upward, and the straw wiggles before the 3 second loop resets.
 
 ## Running The Files
 

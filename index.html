@@ -844,13 +844,158 @@
             <div class="eyebrow">LLM-Guided Motion Experiments</div>
             <h2>Canvas-first prototypes and Lottie round-trips.</h2>
             <p>
-              These experiments start from a motion brief instead of an existing `.lottie`. The dartboard pass is refined in canvas
-              first, then reused as generated Lottie JSON through a dedicated export step.
+              These experiments start from a motion brief instead of an existing `.lottie`. The starfield, lucky wheel, milk tea, and
+              dartboard passes are refined in canvas first; the dartboard is then reused as generated Lottie JSON through a dedicated
+              export step.
             </p>
           </div>
         </div>
 
         <div class="attempt-grid">
+          <article class="attempt-card">
+            <div class="attempt-head">
+              <div>
+                <h3>Lucky Spin Wheel Interactive</h3>
+                <p>
+                  An interactive prize wheel with a fixed pointer, fast spin-up, easing into a landing segment, confetti, and a
+                  different non-repeating result every time you press spin.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./lucky-spin-wheel-prototype.html">Open Canvas</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">Canvas Prototype</div>
+                  <div class="stage-subtitle">`lucky-spin-wheel-prototype.html?embed=1`</div>
+                </div>
+                <div class="badge">Random result</div>
+              </div>
+              <div class="viewport">
+                <iframe id="lucky-wheel-frame" src="./lucky-spin-wheel-prototype.html?embed=1" title="Lucky spin wheel canvas prototype"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <button type="button" data-reset="lucky-wheel-frame">Reset Wheel</button>
+            </div>
+
+            <div class="source-strip">
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./lucky-spin-wheel-prototype.html" data-source-label="Lucky spin wheel canvas attempt">Inspect Canvas Source</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="attempt-card">
+            <div class="attempt-head">
+              <div>
+                <h3>Lucky Spin Wheel Loop Fallback</h3>
+                <p>
+                  The fallback version keeps the original auto-looping behavior: each loop spins into the pointer, reveals a result,
+                  then chooses a different segment for the next play.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./lucky-spin-wheel-prototype.html?mode=loop">Open Canvas</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">Looping Fallback</div>
+                  <div class="stage-subtitle">`lucky-spin-wheel-prototype.html?mode=loop&embed=1`</div>
+                </div>
+                <div class="badge">Auto loop</div>
+              </div>
+              <div class="viewport">
+                <iframe id="lucky-wheel-loop-frame" src="./lucky-spin-wheel-prototype.html?mode=loop&embed=1" title="Lucky spin wheel looping fallback"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <button type="button" data-reset="lucky-wheel-loop-frame">Restart Loop</button>
+            </div>
+
+            <div class="source-strip">
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./lucky-spin-wheel-prototype.html" data-source-label="Lucky spin wheel canvas source">Inspect Canvas Source</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="attempt-card">
+            <div class="attempt-head">
+              <div>
+                <h3>Interactive Starfield</h3>
+                <p>
+                  A full-screen 2D canvas starfield with layered depth, pointer gravity modes, click shockwaves, drag trails, and
+                  timed shooting stars.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./starfield-interactive.html">Open Canvas</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">Interactive Canvas</div>
+                  <div class="stage-subtitle">`starfield-interactive.html?embed=1`</div>
+                </div>
+                <div class="badge">Pointer physics</div>
+              </div>
+              <div class="viewport">
+                <iframe id="starfield-frame" src="./starfield-interactive.html?embed=1" title="Interactive starfield canvas prototype"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <button type="button" data-reset="starfield-frame">Restart Starfield</button>
+            </div>
+
+            <div class="source-strip">
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./starfield-interactive.html" data-source-label="Interactive starfield canvas attempt">Inspect Canvas Source</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="attempt-card">
+            <div class="attempt-head">
+              <div>
+                <h3>Milk Tea Drop Prototype</h3>
+                <p>
+                  A 3 second loop from a short motion brief: the cup drops in, compresses through two bounces, pops boba pearls upward,
+                  and finishes with a decaying straw wiggle.
+                </p>
+              </div>
+              <div class="attempt-links">
+                <a class="mini-link" href="./milk-tea-drop-prototype.html">Open Canvas</a>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="stage-meta">
+                <div>
+                  <div class="stage-title">Canvas Prototype</div>
+                  <div class="stage-subtitle">`milk-tea-drop-prototype.html?embed=1`</div>
+                </div>
+                <div class="badge">Motion brief</div>
+              </div>
+              <div class="viewport">
+                <iframe id="milk-tea-frame" src="./milk-tea-drop-prototype.html?embed=1" title="Milk tea drop canvas prototype"></iframe>
+              </div>
+            </div>
+            <div class="attempt-foot">
+              <button type="button" data-reset="milk-tea-frame">Restart Canvas Attempt</button>
+            </div>
+
+            <div class="source-strip">
+              <div class="source-actions">
+                <button type="button" class="mini-link" data-source="./milk-tea-drop-prototype.html" data-source-label="Milk tea canvas attempt">Inspect Canvas Source</button>
+              </div>
+            </div>
+          </article>
+
           <article class="attempt-card">
             <div class="attempt-head">
               <div>

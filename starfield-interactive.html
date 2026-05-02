@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Starfield</title>
+<style>
+  :root {
+    --bg: #02050c;
+    --panel: rgba(6, 12, 24, 0.72);
+    --panel-strong: rgba(8, 16, 30, 0.88);
+    --line: rgba(164, 200, 255, 0.18);
+    --line-strong: rgba(218, 232, 255, 0.34);
+    --text: #f3f7ff;
+    --muted: #99a9c6;
+    --accent: #8bd8ff;
+    --gold: #ffe29a;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+    background: #02050c;
+  }
+
+  .hud {
+    position: fixed;
+    left: 18px;
+    right: 18px;
+    top: 18px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    pointer-events: none;
+  }
+
+  .brand,
+  .controls {
+    pointer-events: auto;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(18px);
+  }
+
+  .brand {
+    min-width: 0;
+    padding: 13px 15px;
+    border-radius: 18px;
+  }
+
+  .brand-title {
+    font-weight: 800;
+    font-size: 0.98rem;
+    letter-spacing: 0.02em;
+  }
+
+  .brand-subtitle {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .segmented {
+    display: inline-grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  button {
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    min-width: 62px;
+    padding: 9px 10px;
+    color: var(--muted);
+    background: transparent;
+    font: 700 0.84rem/1 "IBM Plex Sans", sans-serif;
+    cursor: pointer;
+    transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
+  }
+
+  button:hover {
+    transform: translateY(-1px);
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  button.is-active {
+    color: #06111d;
+    background: linear-gradient(135deg, #d7f1ff, #8bd8ff);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .reset {
+    min-width: auto;
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .field {
+    display: grid;
+    grid-template-columns: auto 108px;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  input[type="range"] {
+    width: 108px;
+    accent-color: var(--accent);
+  }
+
+  .toggle-field {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-field input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .switch {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    flex: 0 0 auto;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    transition: background 140ms ease, border-color 140ms ease;
+  }
+
+  .switch::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(208, 221, 242, 0.86);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+    transition: background 140ms ease, transform 140ms ease;
+  }
+
+  .toggle-field input:checked + .switch {
+    border-color: rgba(139, 216, 255, 0.46);
+    background: rgba(139, 216, 255, 0.3);
+  }
+
+  .toggle-field input:checked + .switch::after {
+    transform: translateX(18px);
+    background: #d7f1ff;
+  }
+
+  .toggle-field input:focus-visible + .switch {
+    outline: 2px solid rgba(139, 216, 255, 0.56);
+    outline-offset: 3px;
+  }
+
+  #tweakpane-container {
+    position: fixed;
+    right: 18px;
+    top: 112px;
+    z-index: 5;
+    width: min(320px, calc(100vw - 36px));
+    max-height: calc(100vh - 146px);
+    pointer-events: auto;
+    overflow: auto;
+    --tp-base-background-color: rgba(6, 12, 24, 0.86);
+    --tp-base-shadow-color: rgba(0, 0, 0, 0.32);
+    --tp-button-background-color: rgba(255, 255, 255, 0.08);
+    --tp-button-background-color-active: rgba(139, 216, 255, 0.26);
+    --tp-button-background-color-focus: rgba(139, 216, 255, 0.18);
+    --tp-button-background-color-hover: rgba(255, 255, 255, 0.14);
+    --tp-button-foreground-color: #f3f7ff;
+    --tp-container-background-color: rgba(255, 255, 255, 0.055);
+    --tp-container-background-color-active: rgba(255, 255, 255, 0.09);
+    --tp-container-background-color-focus: rgba(255, 255, 255, 0.075);
+    --tp-container-background-color-hover: rgba(255, 255, 255, 0.07);
+    --tp-container-foreground-color: #d6e2f7;
+    --tp-groove-foreground-color: rgba(255, 255, 255, 0.13);
+    --tp-input-background-color: rgba(255, 255, 255, 0.09);
+    --tp-input-background-color-active: rgba(139, 216, 255, 0.24);
+    --tp-input-background-color-focus: rgba(139, 216, 255, 0.16);
+    --tp-input-background-color-hover: rgba(255, 255, 255, 0.13);
+    --tp-input-foreground-color: #f3f7ff;
+    --tp-label-foreground-color: #99a9c6;
+    --tp-monitor-background-color: rgba(0, 0, 0, 0.28);
+    --tp-monitor-foreground-color: #8bd8ff;
+  }
+
+  .readout {
+    position: fixed;
+    left: 18px;
+    bottom: 18px;
+    z-index: 5;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    pointer-events: none;
+  }
+
+  .pill {
+    border: 1px solid var(--line);
+    background: rgba(6, 12, 24, 0.62);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 8px 11px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    backdrop-filter: blur(14px);
+  }
+
+  .flash {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(170, 222, 255, var(--a, 0)), transparent 34%);
+    mix-blend-mode: screen;
+  }
+
+  body.embed .hud,
+  body.embed #tweakpane-container,
+  body.embed .readout {
+    display: none;
+  }
+
+  @media (max-width: 840px) {
+    .hud {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .controls {
+      justify-content: flex-start;
+    }
+
+    #tweakpane-container {
+      left: 10px;
+      right: 10px;
+      top: auto;
+      bottom: 10px;
+      width: auto;
+      max-height: 42vh;
+    }
+
+    .readout {
+      bottom: calc(42vh + 22px);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .hud {
+      left: 10px;
+      right: 10px;
+      top: 10px;
+    }
+
+    .brand {
+      padding: 11px 12px;
+    }
+
+    .controls {
+      gap: 8px;
+    }
+
+    .field {
+      grid-template-columns: 1fr;
+      gap: 5px;
+    }
+  }
+</style>
+</head>
+<body>
+<canvas id="space"></canvas>
+<div class="flash" id="flash"></div>
+
+<div class="hud">
+  <section class="brand" aria-label="Scene title">
+    <div class="brand-title">Interactive Starfield</div>
+    <div class="brand-subtitle">Canvas Prototype</div>
+  </section>
+
+  <section class="controls" aria-label="Starfield controls">
+    <div class="segmented" aria-label="Gravity mode">
+      <button type="button" class="is-active" data-mode="attract">Pull</button>
+      <button type="button" data-mode="repel">Push</button>
+      <button type="button" data-mode="swirl">Swirl</button>
+    </div>
+    <label class="field">
+      Density
+      <input id="density" type="range" min="420" max="1800" value="1050" step="10">
+    </label>
+    <label class="field">
+      Speed
+      <input id="speed" type="range" min="0.45" max="2.2" value="1" step="0.05">
+    </label>
+    <label class="toggle-field">
+      <input id="links-toggle" type="checkbox" checked>
+      <span class="switch" aria-hidden="true"></span>
+      Links
+    </label>
+    <button type="button" class="reset" id="reset">Reset</button>
+  </section>
+</div>
+
+<div id="tweakpane-container" aria-label="Starfield parameter panel"></div>
+
+<div class="readout" aria-hidden="true">
+  <div class="pill" id="mode-readout">PULL</div>
+  <div class="pill" id="count-readout">1050 STARS</div>
+  <div class="pill" id="pulse-readout">0 WAVES</div>
+</div>
+
+<script src="./vendor/tweakpane/tweakpane-global.min.js"></script>
+<script>
+const { Pane } = window.Tweakpane;
+const canvas = document.getElementById('space');
+const ctx = canvas.getContext('2d');
+const flash = document.getElementById('flash');
+const densityInput = document.getElementById('density');
+const speedInput = document.getElementById('speed');
+const linksToggle = document.getElementById('links-toggle');
+const tweakpaneContainer = document.getElementById('tweakpane-container');
+const resetButton = document.getElementById('reset');
+const modeButtons = Array.from(document.querySelectorAll('[data-mode]'));
+const modeReadout = document.getElementById('mode-readout');
+const countReadout = document.getElementById('count-readout');
+const pulseReadout = document.getElementById('pulse-readout');
+
+const queryParams = new URLSearchParams(window.location.search);
+const EMBED = queryParams.get('embed') === '1';
+const DPR_LIMIT = 2;
+const STAR_COLORS = [
+  [220, 238, 255],
+  [255, 246, 220],
+  [202, 224, 255],
+  [255, 226, 184],
+  [190, 216, 255],
+];
+const DEFAULT_PARAMS = Object.freeze({
+  pullImpact: 3.3,
+  pushImpact: 4.1,
+  swirlImpact: 4.8,
+  swirlInward: 0.14,
+  hoverRadius: 250,
+  holdRadius: 340,
+  holdBoost: 2.6,
+  wavePower: 9,
+  repelWavePower: 13,
+  waveRadius: 0.58,
+  waveLife: 1.15,
+  waveBand: 46,
+  waveBandGrow: 36,
+  waveOpacity: 0.42,
+  trailStrength: 1.1,
+  trailRadius: 150,
+  trailFade: 1.9,
+  trailMax: 54,
+  trailOpacity: 0.34,
+  linkRadius: 280,
+  linkCount: 10,
+  linkOpacity: 0.18,
+  linkWidth: 1,
+  starScale: 1,
+  glowScale: 1,
+  streakScale: 1,
+  driftScale: 1,
+  twinkleScale: 1,
+  shootingStars: true,
+});
+
+let width = 1;
+let height = 1;
+let dpr = 1;
+let cx = 0;
+let cy = 0;
+let stars = [];
+let shootingStars = [];
+let waves = [];
+let trail = [];
+let mode = 'attract';
+let linksEnabled = linksToggle.checked;
+let params = { ...DEFAULT_PARAMS };
+let pointer = {
+  x: 0,
+  y: 0,
+  px: 0,
+  py: 0,
+  active: false,
+  down: false,
+  movedAt: 0,
+};
+let density = EMBED ? 900 : Number(densityInput.value);
+let speedScale = EMBED ? 0.9 : Number(speedInput.value);
+let lastTime = performance.now();
+let nextShootingStar = 0;
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function random(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function choose(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, DPR_LIMIT);
+  width = Math.max(1, window.innerWidth);
+  height = Math.max(1, window.innerHeight);
+  cx = width / 2;
+  cy = height / 2;
+
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  pointer.x = pointer.x || cx;
+  pointer.y = pointer.y || cy;
+  pointer.px = pointer.x;
+  pointer.py = pointer.y;
+  resetStars(density);
+}
+
+function resetStar(star, far = false) {
+  const spread = Math.max(width, height) * 1.25;
+  star.x = random(-spread, spread);
+  star.y = random(-spread, spread);
+  star.z = far ? random(0.88, 1.18) : random(0.18, 1.18);
+  star.vx = random(-0.012, 0.012);
+  star.vy = random(-0.012, 0.012);
+  star.mass = random(0.6, 1.7);
+  star.size = random(0.55, 1.75);
+  star.twinkle = random(0.6, 2.4);
+  star.phase = random(0, Math.PI * 2);
+  star.color = choose(STAR_COLORS);
+  star.bright = Math.random() > 0.86;
+  star.prevSx = null;
+  star.prevSy = null;
+}
+
+function resetStars(count) {
+  const target = Math.round(count);
+  if (stars.length > target) {
+    stars.length = target;
+  }
+
+  while (stars.length < target) {
+    const star = {};
+    resetStar(star);
+    stars.push(star);
+  }
+
+  for (const star of stars) {
+    if (star.x === undefined) resetStar(star);
+  }
+}
+
+function project(star) {
+  const z = Math.max(0.07, star.z);
+  return {
+    x: cx + (star.x / z) * 0.18,
+    y: cy + (star.y / z) * 0.18,
+    scale: 1 / z,
+  };
+}
+
+function drawBackdrop(time) {
+  const bg = ctx.createLinearGradient(0, 0, 0, height);
+  bg.addColorStop(0, '#050914');
+  bg.addColorStop(0.45, '#030712');
+  bg.addColorStop(1, '#010309');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  const driftX = Math.sin(time * 0.025) * width * 0.04;
+  const driftY = Math.cos(time * 0.018) * height * 0.035;
+  const gasA = ctx.createRadialGradient(cx * 0.68 + driftX, cy * 0.42 + driftY, 20, cx * 0.68 + driftX, cy * 0.42 + driftY, Math.max(width, height) * 0.72);
+  gasA.addColorStop(0, 'rgba(76, 129, 190, 0.105)');
+  gasA.addColorStop(0.42, 'rgba(64, 98, 160, 0.045)');
+  gasA.addColorStop(1, 'rgba(64, 98, 160, 0)');
+  ctx.fillStyle = gasA;
+  ctx.fillRect(0, 0, width, height);
+
+  const gasB = ctx.createRadialGradient(cx * 1.2 - driftX * 0.7, cy * 0.78 - driftY * 0.5, 20, cx * 1.2 - driftX * 0.7, cy * 0.78 - driftY * 0.5, Math.max(width, height) * 0.65);
+  gasB.addColorStop(0, 'rgba(177, 111, 210, 0.074)');
+  gasB.addColorStop(0.5, 'rgba(177, 111, 210, 0.03)');
+  gasB.addColorStop(1, 'rgba(177, 111, 210, 0)');
+  ctx.fillStyle = gasB;
+  ctx.fillRect(0, 0, width, height);
+
+  const band = ctx.createLinearGradient(width * 0.05, height * 0.95, width * 0.95, height * 0.08);
+  band.addColorStop(0, 'rgba(255, 255, 255, 0)');
+  band.addColorStop(0.38, 'rgba(136, 169, 226, 0.028)');
+  band.addColorStop(0.5, 'rgba(255, 244, 219, 0.038)');
+  band.addColorStop(0.62, 'rgba(137, 167, 225, 0.026)');
+  band.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = band;
+  ctx.fillRect(0, 0, width, height);
+}
+
+function pointerForce(star, projected, dt) {
+  if (!pointer.active) return;
+
+  const dx = pointer.x - projected.x;
+  const dy = pointer.y - projected.y;
+  const distSq = dx * dx + dy * dy;
+  const radius = pointer.down ? params.holdRadius : params.hoverRadius;
+  if (distSq > radius * radius) return;
+
+  const dist = Math.sqrt(distSq) + 0.001;
+  const falloff = Math.pow(1 - dist / radius, 2);
+  const depth = clamp(projected.scale * 0.42, 0.35, 2.4);
+  const modeImpact = mode === 'attract'
+    ? params.pullImpact
+    : mode === 'repel'
+      ? params.pushImpact
+      : params.swirlImpact;
+  const strength = modeImpact * (pointer.down ? params.holdBoost : 1) * falloff * depth * dt;
+  const nx = dx / dist;
+  const ny = dy / dist;
+
+  if (mode === 'attract') {
+    star.vx += nx * strength;
+    star.vy += ny * strength;
+  } else if (mode === 'repel') {
+    star.vx -= nx * strength;
+    star.vy -= ny * strength;
+  } else {
+    star.vx += -ny * strength + nx * strength * params.swirlInward;
+    star.vy += nx * strength + ny * strength * params.swirlInward;
+  }
+}
+
+function waveForce(star, projected, dt) {
+  for (const wave of waves) {
+    const age = wave.age / wave.life;
+    const radius = wave.radius * age;
+    const dx = projected.x - wave.x;
+    const dy = projected.y - wave.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) + 0.001;
+    const band = params.waveBand + age * params.waveBandGrow;
+    const ring = 1 - clamp(Math.abs(dist - radius) / band, 0, 1);
+    if (ring <= 0) continue;
+
+    const push = ring * wave.power * (1 - age) * dt;
+    star.vx += (dx / dist) * push;
+    star.vy += (dy / dist) * push;
+  }
+}
+
+function trailForce(star, projected, dt) {
+  if (trail.length < 3) return;
+
+  for (let i = Math.max(0, trail.length - 12); i < trail.length; i++) {
+    const point = trail[i];
+    const dx = point.x - projected.x;
+    const dy = point.y - projected.y;
+    const distSq = dx * dx + dy * dy;
+    if (distSq > params.trailRadius * params.trailRadius) continue;
+
+    const dist = Math.sqrt(distSq) + 0.001;
+    const pull = (1 - dist / params.trailRadius) * point.life * params.trailStrength * dt;
+    star.vx += (dx / dist) * pull;
+    star.vy += (dy / dist) * pull;
+  }
+}
+
+function updateStar(star, dt, time) {
+  const projected = project(star);
+
+  pointerForce(star, projected, dt);
+  waveForce(star, projected, dt);
+  trailForce(star, projected, dt);
+
+  const drift = speedScale * params.driftScale * dt;
+  star.z -= 0.075 * drift;
+  star.x += (star.vx + Math.sin(time * 0.12 + star.phase) * 0.014) * 54 * drift;
+  star.y += (star.vy + Math.cos(time * 0.1 + star.phase) * 0.014) * 54 * drift;
+  star.vx *= Math.pow(0.986, dt * 60);
+  star.vy *= Math.pow(0.986, dt * 60);
+
+  const next = project(star);
+  if (
+    star.z < 0.08 ||
+    next.x < -80 ||
+    next.x > width + 80 ||
+    next.y < -80 ||
+    next.y > height + 80
+  ) {
+    resetStar(star, true);
+    return null;
+  }
+
+  return next;
+}
+
+function drawStar(star, projected, time) {
+  const [r, g, b] = star.color;
+  const depth = clamp((1.16 - star.z) / 1.08, 0.05, 1);
+  const twinkle = 0.72 + Math.sin(time * star.twinkle * params.twinkleScale + star.phase) * 0.28;
+  const alpha = clamp(depth * twinkle, 0.04, 0.96);
+  const radius = clamp(star.size * projected.scale * 0.64 * params.starScale, 0.25, star.bright ? 4.2 : 2.8);
+  const trailAlpha = clamp(depth * speedScale * params.streakScale * 0.28, 0, 0.7);
+
+  if (star.prevSx !== null && trailAlpha > 0.05) {
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${trailAlpha})`;
+    ctx.lineWidth = Math.max(0.5, radius * 0.55);
+    ctx.beginPath();
+    ctx.moveTo(star.prevSx, star.prevSy);
+    ctx.lineTo(projected.x, projected.y);
+    ctx.stroke();
+  }
+
+  if (star.bright && params.glowScale > 0) {
+    const glow = ctx.createRadialGradient(projected.x, projected.y, 0, projected.x, projected.y, radius * 6);
+    glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.28 * params.glowScale})`);
+    glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(projected.x, projected.y, radius * 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  ctx.beginPath();
+  ctx.arc(projected.x, projected.y, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  star.prevSx = projected.x;
+  star.prevSy = projected.y;
+}
+
+function drawConstellations() {
+  if (!linksEnabled || !pointer.active) return;
+
+  const nearby = [];
+  for (const star of stars) {
+    if (star.prevSx === null || !star.bright) continue;
+    const dx = star.prevSx - pointer.x;
+    const dy = star.prevSy - pointer.y;
+    if (dx * dx + dy * dy < params.linkRadius * params.linkRadius) {
+      nearby.push(star);
+    }
+  }
+
+  nearby.sort((a, b) => {
+    const da = (a.prevSx - pointer.x) ** 2 + (a.prevSy - pointer.y) ** 2;
+    const db = (b.prevSx - pointer.x) ** 2 + (b.prevSy - pointer.y) ** 2;
+    return da - db;
+  });
+
+  const selected = nearby.slice(0, params.linkCount);
+  ctx.strokeStyle = `rgba(139, 216, 255, ${params.linkOpacity})`;
+  ctx.lineWidth = params.linkWidth;
+  for (let i = 0; i < selected.length - 1; i++) {
+    const a = selected[i];
+    const b = selected[i + 1];
+    ctx.beginPath();
+    ctx.moveTo(a.prevSx, a.prevSy);
+    ctx.lineTo(b.prevSx, b.prevSy);
+    ctx.stroke();
+  }
+}
+
+function updateWaves(dt) {
+  for (const wave of waves) {
+    wave.age += dt;
+  }
+  waves = waves.filter((wave) => wave.age < wave.life);
+}
+
+function drawWaves() {
+  for (const wave of waves) {
+    const p = wave.age / wave.life;
+    const radius = wave.radius * p;
+    const alpha = (1 - p) * params.waveOpacity;
+
+    ctx.strokeStyle = `rgba(156, 220, 255, ${alpha})`;
+    ctx.lineWidth = 2 + p * 4;
+    ctx.beginPath();
+    ctx.arc(wave.x, wave.y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function addWave(x, y, power = 8.5) {
+  waves.push({
+    x,
+    y,
+    age: 0,
+    life: params.waveLife,
+    radius: Math.max(width, height) * params.waveRadius,
+    power,
+  });
+
+  flash.style.setProperty('--x', `${(x / width) * 100}%`);
+  flash.style.setProperty('--y', `${(y / height) * 100}%`);
+  flash.style.setProperty('--a', '0.28');
+  window.setTimeout(() => {
+    flash.style.setProperty('--a', '0');
+  }, 90);
+}
+
+function updateTrail(dt) {
+  for (const point of trail) {
+    point.life -= dt * params.trailFade;
+  }
+  trail = trail.filter((point) => point.life > 0);
+}
+
+function drawTrail() {
+  if (trail.length < 2) return;
+
+  ctx.lineCap = 'round';
+  for (let i = 1; i < trail.length; i++) {
+    const a = trail[i - 1];
+    const b = trail[i];
+    const alpha = Math.min(a.life, b.life) * params.trailOpacity;
+    ctx.strokeStyle = `rgba(190, 225, 255, ${alpha})`;
+    ctx.lineWidth = 1 + Math.min(a.life, b.life) * 7;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+}
+
+function spawnShootingStar(now) {
+  const fromLeft = Math.random() > 0.5;
+  const y = random(height * 0.08, height * 0.42);
+  const x = fromLeft ? -120 : width + 120;
+  const vx = (fromLeft ? 1 : -1) * random(560, 860);
+  const vy = random(180, 320);
+
+  shootingStars.push({
+    x,
+    y,
+    vx,
+    vy,
+    life: 1,
+    age: 0,
+    length: random(120, 220),
+    color: choose(STAR_COLORS),
+  });
+
+  nextShootingStar = now + random(2200, 5600);
+}
+
+function updateShootingStars(dt, now) {
+  if (params.shootingStars && now > nextShootingStar) {
+    spawnShootingStar(now);
+  }
+
+  for (const star of shootingStars) {
+    star.age += dt;
+    star.x += star.vx * dt * speedScale;
+    star.y += star.vy * dt * speedScale;
+  }
+
+  shootingStars = shootingStars.filter((star) => (
+    star.age < star.life &&
+    star.x > -260 &&
+    star.x < width + 260 &&
+    star.y < height + 260
+  ));
+}
+
+function drawShootingStars() {
+  for (const star of shootingStars) {
+    const [r, g, b] = star.color;
+    const alpha = 1 - star.age / star.life;
+    const angle = Math.atan2(star.vy, star.vx);
+    const tx = Math.cos(angle) * star.length;
+    const ty = Math.sin(angle) * star.length;
+
+    const grad = ctx.createLinearGradient(star.x, star.y, star.x - tx, star.y - ty);
+    grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+    grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(star.x, star.y);
+    ctx.lineTo(star.x - tx, star.y - ty);
+    ctx.stroke();
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function updateReadouts() {
+  if (modeReadout) modeReadout.textContent = mode.toUpperCase();
+  if (countReadout) countReadout.textContent = `${stars.length} STARS`;
+  if (pulseReadout) pulseReadout.textContent = `${waves.length} WAVES`;
+}
+
+function frame(now) {
+  const dt = clamp((now - lastTime) / 1000, 0.001, 0.04);
+  lastTime = now;
+  const time = now / 1000;
+
+  drawBackdrop(time);
+  updateWaves(dt);
+  updateTrail(dt);
+  updateShootingStars(dt, now);
+
+  for (const star of stars) {
+    const projected = updateStar(star, dt, time);
+    if (projected) drawStar(star, projected, time);
+  }
+
+  drawConstellations();
+  drawTrail();
+  drawWaves();
+  drawShootingStars();
+  updateReadouts();
+
+  requestAnimationFrame(frame);
+}
+
+function setMode(nextMode) {
+  mode = nextMode;
+  for (const button of modeButtons) {
+    button.classList.toggle('is-active', button.dataset.mode === mode);
+  }
+}
+
+function pruneTrail() {
+  while (trail.length > params.trailMax) trail.shift();
+}
+
+function addParamBinding(folder, key, label, options = {}) {
+  const binding = folder.addBinding(params, key, { label, ...options });
+  binding.on('change', pruneTrail);
+  return binding;
+}
+
+function setupTweakpane() {
+  if (EMBED || !tweakpaneContainer) return null;
+
+  const pane = new Pane({
+    title: 'Tweak Panel',
+    expanded: true,
+    container: tweakpaneContainer,
+  });
+
+  const forceFolder = pane.addFolder({ title: 'Forces' });
+  addParamBinding(forceFolder, 'pullImpact', 'Pull Impact', { min: 0, max: 10, step: 0.1 });
+  addParamBinding(forceFolder, 'pushImpact', 'Push Impact', { min: 0, max: 14, step: 0.1 });
+  addParamBinding(forceFolder, 'swirlImpact', 'Swirl Impact', { min: 0, max: 16, step: 0.1 });
+  addParamBinding(forceFolder, 'swirlInward', 'Swirl Inward', { min: -0.45, max: 0.65, step: 0.01 });
+  addParamBinding(forceFolder, 'hoverRadius', 'Hover Radius', { min: 90, max: 520, step: 5 });
+  addParamBinding(forceFolder, 'holdRadius', 'Hold Radius', { min: 140, max: 680, step: 5 });
+  addParamBinding(forceFolder, 'holdBoost', 'Hold Boost', { min: 1, max: 5, step: 0.05 });
+
+  const waveFolder = pane.addFolder({ title: 'Shockwave', expanded: false });
+  addParamBinding(waveFolder, 'wavePower', 'Wave Power', { min: 0, max: 24, step: 0.25 });
+  addParamBinding(waveFolder, 'repelWavePower', 'Repel Wave', { min: 0, max: 30, step: 0.25 });
+  addParamBinding(waveFolder, 'waveRadius', 'Wave Size', { min: 0.25, max: 1.2, step: 0.01 });
+  addParamBinding(waveFolder, 'waveLife', 'Wave Life', { min: 0.25, max: 2.6, step: 0.05 });
+  addParamBinding(waveFolder, 'waveBand', 'Ring Width', { min: 12, max: 110, step: 1 });
+  addParamBinding(waveFolder, 'waveOpacity', 'Wave Opacity', { min: 0.05, max: 0.9, step: 0.01 });
+
+  const trailFolder = pane.addFolder({ title: 'Trails & Links', expanded: false });
+  addParamBinding(trailFolder, 'trailStrength', 'Trail Pull', { min: 0, max: 4, step: 0.05 });
+  addParamBinding(trailFolder, 'trailRadius', 'Trail Radius', { min: 40, max: 320, step: 5 });
+  addParamBinding(trailFolder, 'trailFade', 'Trail Fade', { min: 0.4, max: 4, step: 0.05 });
+  addParamBinding(trailFolder, 'trailMax', 'Trail Length', { min: 8, max: 120, step: 1 });
+  addParamBinding(trailFolder, 'trailOpacity', 'Trail Opacity', { min: 0.04, max: 0.8, step: 0.01 });
+  addParamBinding(trailFolder, 'linkRadius', 'Link Radius', { min: 80, max: 520, step: 5 });
+  addParamBinding(trailFolder, 'linkCount', 'Link Count', { min: 2, max: 24, step: 1 });
+  addParamBinding(trailFolder, 'linkOpacity', 'Link Opacity', { min: 0.02, max: 0.7, step: 0.01 });
+  addParamBinding(trailFolder, 'linkWidth', 'Link Width', { min: 0.4, max: 4, step: 0.1 });
+
+  const starFolder = pane.addFolder({ title: 'Stars', expanded: false });
+  addParamBinding(starFolder, 'starScale', 'Star Size', { min: 0.4, max: 2.4, step: 0.05 });
+  addParamBinding(starFolder, 'glowScale', 'Glow', { min: 0, max: 2.5, step: 0.05 });
+  addParamBinding(starFolder, 'streakScale', 'Streaks', { min: 0, max: 2.5, step: 0.05 });
+  addParamBinding(starFolder, 'driftScale', 'Drift', { min: 0, max: 2.4, step: 0.05 });
+  addParamBinding(starFolder, 'twinkleScale', 'Twinkle', { min: 0, max: 3, step: 0.05 });
+  addParamBinding(starFolder, 'shootingStars', 'Meteors');
+
+  pane.addButton({ title: 'Defaults' }).on('click', () => {
+    Object.assign(params, DEFAULT_PARAMS);
+    linksToggle.checked = true;
+    linksEnabled = true;
+    pruneTrail();
+    pane.refresh();
+  });
+
+  return pane;
+}
+
+function updatePointer(clientX, clientY, active = true) {
+  pointer.px = pointer.x;
+  pointer.py = pointer.y;
+  pointer.x = clientX;
+  pointer.y = clientY;
+  pointer.active = active;
+  pointer.movedAt = performance.now();
+
+  if (pointer.down) {
+    trail.push({ x: pointer.x, y: pointer.y, life: 1 });
+    while (trail.length > params.trailMax) trail.shift();
+  }
+}
+
+for (const button of modeButtons) {
+  button.addEventListener('click', () => setMode(button.dataset.mode));
+}
+
+densityInput.addEventListener('input', () => {
+  density = Number(densityInput.value);
+  resetStars(density);
+});
+
+speedInput.addEventListener('input', () => {
+  speedScale = Number(speedInput.value);
+});
+
+linksToggle.addEventListener('change', () => {
+  linksEnabled = linksToggle.checked;
+});
+
+resetButton.addEventListener('click', () => {
+  trail = [];
+  waves = [];
+  shootingStars = [];
+  resetStars(density);
+});
+
+canvas.addEventListener('pointermove', (event) => {
+  updatePointer(event.clientX, event.clientY);
+});
+
+canvas.addEventListener('pointerenter', (event) => {
+  updatePointer(event.clientX, event.clientY);
+});
+
+canvas.addEventListener('pointerleave', () => {
+  pointer.active = false;
+});
+
+canvas.addEventListener('pointerdown', (event) => {
+  pointer.down = true;
+  updatePointer(event.clientX, event.clientY);
+  addWave(event.clientX, event.clientY, mode === 'repel' ? params.repelWavePower : params.wavePower);
+});
+
+canvas.addEventListener('pointerup', () => {
+  pointer.down = false;
+});
+
+canvas.addEventListener('pointercancel', () => {
+  pointer.down = false;
+  pointer.active = false;
+});
+
+window.addEventListener('pointerup', () => {
+  pointer.down = false;
+});
+
+window.addEventListener('resize', resize);
+
+if (EMBED) {
+  document.body.classList.add('embed');
+}
+
+setupTweakpane();
+resize();
+nextShootingStar = performance.now() + random(900, 2200);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

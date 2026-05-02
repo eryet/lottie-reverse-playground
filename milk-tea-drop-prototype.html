@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Milk Tea Drop Motion Prototype</title>
+<style>
+  :root {
+    --bg: #09111d;
+    --panel: rgba(13, 22, 38, 0.88);
+    --panel-line: rgba(255, 196, 119, 0.18);
+    --text: #fff8ed;
+    --muted: #bea992;
+    --accent: #ffc978;
+    --mint: #7ee0c2;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    padding: 28px;
+    color: var(--text);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 16% 12%, rgba(255, 201, 120, 0.16), transparent 28%),
+      radial-gradient(circle at 88% 18%, rgba(126, 224, 194, 0.13), transparent 24%),
+      linear-gradient(180deg, #111827 0%, var(--bg) 100%);
+  }
+
+  .shell {
+    width: min(100%, 1120px);
+    margin: 0 auto;
+    display: grid;
+    gap: 20px;
+  }
+
+  .hero,
+  .viewer,
+  .notes {
+    border: 1px solid var(--panel-line);
+    border-radius: 24px;
+    background: var(--panel);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(16px);
+  }
+
+  .hero {
+    padding: 24px 26px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 201, 120, 0.12);
+    border: 1px solid rgba(255, 201, 120, 0.26);
+    color: #ffe4b4;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin-top: 14px;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+  }
+
+  .hero p {
+    max-width: 54rem;
+    margin-top: 14px;
+    color: var(--muted);
+    line-height: 1.72;
+    font-size: 1rem;
+  }
+
+  .chips {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .chip {
+    padding: 9px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .viewer {
+    padding: 20px;
+  }
+
+  .viewer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .viewer-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .viewer-subtitle {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .status {
+    padding: 10px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  button {
+    appearance: none;
+    border: 1px solid rgba(255, 201, 120, 0.28);
+    background: rgba(255, 201, 120, 0.12);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font: inherit;
+    cursor: pointer;
+    transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+  }
+
+  button:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 201, 120, 0.18);
+    border-color: rgba(255, 201, 120, 0.42);
+  }
+
+  .stage {
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      radial-gradient(circle at 50% 20%, rgba(255, 201, 120, 0.1), transparent 30%),
+      #0b1019;
+  }
+
+  canvas {
+    display: block;
+    width: min(100%, 720px);
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    max-width: 100%;
+  }
+
+  .notes {
+    padding: 22px;
+  }
+
+  .notes h2 {
+    font-size: 1.2rem;
+    letter-spacing: -0.03em;
+  }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .note-card {
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .note-card h3 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+
+  .note-card p {
+    color: var(--muted);
+    line-height: 1.65;
+    font-size: 0.92rem;
+  }
+
+  .code {
+    color: #ffe4b4;
+    font-family: "SFMono-Regular", Menlo, monospace;
+    font-size: 0.88rem;
+  }
+
+  body.embed {
+    padding: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #0b1019;
+  }
+
+  body.embed .shell {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  body.embed .hero,
+  body.embed .viewer-head,
+  body.embed .notes {
+    display: none;
+  }
+
+  body.embed .viewer {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.embed .stage {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  body.embed canvas {
+    width: min(100vw, 100vh);
+    height: min(100vw, 100vh);
+    max-width: none;
+  }
+
+  @media (max-width: 920px) {
+    .notes-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    body {
+      padding: 18px;
+    }
+
+    .hero,
+    .viewer,
+    .notes {
+      padding: 18px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Motion Prototype</div>
+      <h1>Milk tea drop, double bounce, pearl pop, straw wiggle.</h1>
+      <p>
+        A 3 second canvas loop built from explicit motion beats: a falling cup, two compression rebounds, a staggered burst of boba pearls,
+        and a decaying straw wiggle before the loop resets.
+      </p>
+    </div>
+    <div class="chips">
+      <div class="chip">3s loop</div>
+      <div class="chip">60fps</div>
+      <div class="chip">Canvas-first</div>
+      <div class="chip">Vector drawn</div>
+    </div>
+  </section>
+
+  <section class="viewer">
+    <div class="viewer-head">
+      <div>
+        <div class="viewer-title">Preview</div>
+        <div class="viewer-subtitle">Readable timing pass with reusable drawing primitives.</div>
+      </div>
+      <div class="controls">
+        <div class="status" id="phase-label">Phase: Drop</div>
+        <button type="button" id="restart">Restart</button>
+      </div>
+    </div>
+    <div class="stage">
+      <canvas id="c" width="1080" height="1080"></canvas>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>Primary tuning constants</h2>
+    <div class="notes-grid">
+      <article class="note-card">
+        <h3>Drop and bounce</h3>
+        <p>
+          Adjust <span class="code">DROP_END</span>, <span class="code">BOUNCE_1_END</span>, <span class="code">BOUNCE_2_END</span>,
+          <span class="code">FIRST_BOUNCE_HEIGHT</span>, and <span class="code">SECOND_BOUNCE_HEIGHT</span> to tune impact timing and rebound energy.
+        </p>
+      </article>
+      <article class="note-card">
+        <h3>Pearl burst</h3>
+        <p>
+          Adjust <span class="code">BASE_PEARLS</span> to change the in-cup boba cluster and
+          <span class="code">DROPLETS</span> for the small tea splash near the lid.
+        </p>
+      </article>
+      <article class="note-card">
+        <h3>Straw wiggle</h3>
+        <p>
+          Adjust <span class="code">STRAW_WIGGLE_START</span>, <span class="code">STRAW_WIGGLE_END</span>, and
+          <span class="code">STRAW_WIGGLE_DEG</span> to make the straw react earlier, later, or with more elastic snap.
+        </p>
+      </article>
+    </div>
+  </section>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const phaseLabel = document.getElementById('phase-label');
+const restartButton = document.getElementById('restart');
+
+const W = 1080;
+const H = 1080;
+const CX = W / 2;
+const FLOOR_Y = 828;
+const TOTAL_SECONDS = 3;
+
+const DROP_END = 0.76;
+const BOUNCE_1_END = 1.2;
+const BOUNCE_2_END = 1.54;
+const SETTLE_END = 1.76;
+const PEARL_START = 1.02;
+const PEARL_END = 2.12;
+const STRAW_WIGGLE_START = 1.72;
+const STRAW_WIGGLE_END = 2.62;
+const FADE_START = 2.78;
+
+const CUP_START_Y = -260;
+const CUP_REST_Y = 595;
+const CUP_START_X = CX - 78;
+const CUP_REST_X = CX;
+const FIRST_BOUNCE_HEIGHT = 122;
+const SECOND_BOUNCE_HEIGHT = 48;
+const STRAW_WIGGLE_DEG = 12;
+
+const BASE_PEARLS = [
+  { x: -104, y: 182, r: 11.5, phase: 0.1, roll: 0.48, lift: 0.25, delay: 0.34, pop: 38, drift: -15, depth: 0.42 },
+  { x: -83, y: 143, r: 14.5, phase: 0.8, roll: 0.78, lift: 0.56, delay: 0.02, pop: 92, drift: -25, depth: 0.76 },
+  { x: -67, y: 201, r: 12.5, phase: 1.5, roll: 0.35, lift: 0.2, delay: 0.28, pop: 31, drift: 10, depth: 0.36 },
+  { x: -38, y: 164, r: 15.5, phase: 2.2, roll: 0.67, lift: 0.48, delay: 0.09, pop: 80, drift: -12, depth: 0.68 },
+  { x: -17, y: 224, r: 12.8, phase: 2.9, roll: 0.22, lift: 0.15, delay: 0.56, pop: 18, drift: 5, depth: 0.24 },
+  { x: 7, y: 186, r: 14.8, phase: 3.7, roll: 0.5, lift: 0.3, delay: 0.36, pop: 39, drift: 16, depth: 0.5 },
+  { x: 31, y: 151, r: 13.2, phase: 4.4, roll: 0.74, lift: 0.55, delay: 0.16, pop: 87, drift: 18, depth: 0.72 },
+  { x: 55, y: 198, r: 14.2, phase: 5.2, roll: 0.38, lift: 0.2, delay: 0.44, pop: 28, drift: -9, depth: 0.34 },
+  { x: 82, y: 166, r: 12.7, phase: 5.8, roll: 0.54, lift: 0.35, delay: 0.22, pop: 54, drift: 20, depth: 0.55 },
+  { x: -115, y: 216, r: 11.2, phase: 6.4, roll: 0.24, lift: 0.14, delay: 0.48, pop: 18, drift: 2, depth: 0.2 },
+  { x: -92, y: 232, r: 13.5, phase: 7.0, roll: 0.3, lift: 0.16, delay: 0.5, pop: 22, drift: -6, depth: 0.22 },
+  { x: -54, y: 223, r: 11.8, phase: 7.7, roll: 0.32, lift: 0.17, delay: 0.54, pop: 19, drift: 6, depth: 0.26 },
+  { x: -28, y: 207, r: 14.6, phase: 8.4, roll: 0.42, lift: 0.2, delay: 0.46, pop: 28, drift: -5, depth: 0.32 },
+  { x: 3, y: 238, r: 12.2, phase: 9.1, roll: 0.25, lift: 0.12, delay: 0.62, pop: 15, drift: 7, depth: 0.18 },
+  { x: 27, y: 216, r: 13.7, phase: 9.8, roll: 0.34, lift: 0.18, delay: 0.51, pop: 23, drift: 3, depth: 0.28 },
+  { x: 61, y: 230, r: 12.4, phase: 10.4, roll: 0.26, lift: 0.15, delay: 0.58, pop: 16, drift: -7, depth: 0.21 },
+  { x: 91, y: 213, r: 11.6, phase: 11.1, roll: 0.3, lift: 0.17, delay: 0.49, pop: 21, drift: 4, depth: 0.25 },
+  { x: -111, y: 132, r: 10.8, phase: 11.8, roll: 0.82, lift: 0.62, delay: 0.05, pop: 74, drift: -16, depth: 0.84 },
+  { x: -7, y: 126, r: 11.8, phase: 12.5, roll: 0.9, lift: 0.7, delay: 0.13, pop: 95, drift: 4, depth: 0.9 },
+  { x: 102, y: 138, r: 10.6, phase: 13.2, roll: 0.72, lift: 0.52, delay: 0.2, pop: 67, drift: 17, depth: 0.7 },
+  { x: -4, y: 168, r: 10.2, phase: 14.1, roll: 0.58, lift: 0.36, delay: 0.26, pop: 45, drift: -3, depth: 0.45 },
+  { x: 70, y: 178, r: 9.8, phase: 15.0, roll: 0.44, lift: 0.28, delay: 0.39, pop: 32, drift: 8, depth: 0.38 },
+];
+
+let activePearlLoop = -1;
+let activePearls = [];
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function randomSign() {
+  return Math.random() < 0.5 ? -1 : 1;
+}
+
+function randomizePearls() {
+  return BASE_PEARLS.map((pearl) => {
+    const isUpper = pearl.y < 170;
+    const dramatic = Math.random() < (isUpper ? 0.74 : 0.34);
+    const depth = clamp01(pearl.depth + randomBetween(-0.18, 0.2));
+    const popBoost = dramatic ? randomBetween(34, 88) : randomBetween(-8, 24);
+
+    return {
+      ...pearl,
+      x: pearl.x + randomBetween(-13, 13),
+      y: pearl.y + randomBetween(-12, 12),
+      r: Math.max(8.5, pearl.r * randomBetween(0.82, 1.2)),
+      phase: randomBetween(0, Math.PI * 8),
+      roll: clamp01(pearl.roll + randomBetween(-0.2, 0.24)),
+      lift: clamp01(pearl.lift + randomBetween(-0.18, 0.24)),
+      delay: randomBetween(0, 0.62),
+      pop: Math.max(12, pearl.pop + popBoost),
+      drift: pearl.drift + randomSign() * randomBetween(6, dramatic ? 34 : 18),
+      depth,
+      duration: randomBetween(dramatic ? 0.72 : 0.82, dramatic ? 1.04 : 1.18),
+      dramatic,
+      trail: dramatic && Math.random() < 0.72,
+    };
+  });
+}
+
+function ensurePearlsForLoop(loopIndex) {
+  if (loopIndex === activePearlLoop) return;
+  activePearlLoop = loopIndex;
+  activePearls = randomizePearls();
+}
+
+const DROPLETS = [
+  { delay: 0.0, x: -34, y: -14, vx: -24, height: 42, r: 4.8, duration: 0.36 },
+  { delay: 0.04, x: 12, y: -20, vx: 12, height: 54, r: 3.8, duration: 0.42 },
+  { delay: 0.1, x: 48, y: -10, vx: 28, height: 36, r: 4.2, duration: 0.34 },
+  { delay: 0.16, x: -8, y: -2, vx: -8, height: 28, r: 3.2, duration: 0.3 },
+];
+
+function cubicBezier(x1, y1, x2, y2) {
+  return function(t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+
+    const cx = 3 * x1;
+    const bx = 3 * (x2 - x1) - cx;
+    const ax = 1 - cx - bx;
+    const cy = 3 * y1;
+    const by = 3 * (y2 - y1) - cy;
+    const ay = 1 - cy - by;
+
+    function sampleX(tt) { return ((ax * tt + bx) * tt + cx) * tt; }
+    function sampleY(tt) { return ((ay * tt + by) * tt + cy) * tt; }
+
+    let guess = t;
+    for (let i = 0; i < 10; i++) {
+      const error = sampleX(guess) - t;
+      const slope = (3 * ax * guess + 2 * bx) * guess + cx;
+      if (Math.abs(error) < 1e-7 || Math.abs(slope) < 1e-7) break;
+      guess -= error / slope;
+    }
+
+    return sampleY(guess);
+  };
+}
+
+function clamp01(v) {
+  return Math.max(0, Math.min(1, v));
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function mix(a, b, t, easeFn) {
+  const tt = easeFn ? easeFn(clamp01(t)) : clamp01(t);
+  return lerp(a, b, tt);
+}
+
+function decayingWave(time, start, duration, cycles, strength) {
+  const p = (time - start) / duration;
+  if (p < 0 || p > 1) return 0;
+  return Math.sin(p * Math.PI * cycles) * Math.pow(1 - p, 1.45) * strength;
+}
+
+function pearlJostle(time) {
+  return (
+    decayingWave(time, DROP_END, 0.9, 4.4, 1) +
+    decayingWave(time, BOUNCE_1_END, 0.68, 3.3, 0.58) +
+    decayingWave(time, BOUNCE_2_END, 0.54, 2.7, 0.36)
+  );
+}
+
+function pearlNoise(time, seed) {
+  return (
+    Math.sin(time * (3.7 + seed * 0.07) + seed * 1.31) * 0.62 +
+    Math.sin(time * (7.4 + seed * 0.11) + seed * 2.17) * 0.38
+  );
+}
+
+const easeIn = cubicBezier(0.55, 0.05, 0.67, 0.19);
+const easeOut = cubicBezier(0.17, 0.84, 0.44, 1);
+const easeInOut = cubicBezier(0.65, 0, 0.35, 1);
+
+function pathCupBody(ctx) {
+  ctx.beginPath();
+  ctx.moveTo(-158, -118);
+  ctx.bezierCurveTo(-150, -86, -136, 80, -108, 204);
+  ctx.bezierCurveTo(-94, 242, 94, 242, 108, 204);
+  ctx.bezierCurveTo(136, 80, 150, -86, 158, -118);
+  ctx.quadraticCurveTo(0, -148, -158, -118);
+  ctx.closePath();
+}
+
+function roundRectPath(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawBackground() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#111827');
+  bg.addColorStop(0.58, '#0b111b');
+  bg.addColorStop(1, '#070c13');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const topGlow = ctx.createRadialGradient(CX, 210, 0, CX, 210, 350);
+  topGlow.addColorStop(0, 'rgba(255, 201, 120, 0.14)');
+  topGlow.addColorStop(1, 'rgba(255, 201, 120, 0)');
+  ctx.fillStyle = topGlow;
+  ctx.fillRect(0, 0, W, H);
+
+  const mintGlow = ctx.createRadialGradient(CX + 250, 390, 0, CX + 250, 390, 310);
+  mintGlow.addColorStop(0, 'rgba(126, 224, 194, 0.1)');
+  mintGlow.addColorStop(1, 'rgba(126, 224, 194, 0)');
+  ctx.fillStyle = mintGlow;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+  ctx.lineWidth = 1;
+  for (let x = 72; x < W; x += 72) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+  for (let y = 72; y < H; y += 72) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+}
+
+function drawFloor() {
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.fillRect(170, FLOOR_Y + 38, 740, 2);
+}
+
+function drawShadow(x, y, alpha, squashX) {
+  const distance = clamp01((FLOOR_Y - (y + 205)) / 620);
+  const width = lerp(230, 86, distance) * squashX;
+  const height = lerp(38, 14, distance);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x, FLOOR_Y + 48);
+  ctx.scale(1, 0.5);
+  const shadow = ctx.createRadialGradient(0, 0, 0, 0, 0, width);
+  shadow.addColorStop(0, 'rgba(0, 0, 0, 0.44)');
+  shadow.addColorStop(0.64, 'rgba(0, 0, 0, 0.2)');
+  shadow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = shadow;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width, height, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function roundedLine(x1, y1, x2, y2, width, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+}
+
+function drawStraw(angleDeg) {
+  ctx.save();
+  ctx.translate(54, -154);
+  ctx.rotate(angleDeg * Math.PI / 180);
+
+  roundedLine(0, 0, 0, -322, 18, '#161616');
+  roundedLine(-3, -6, -3, -318, 4, 'rgba(255, 255, 255, 0.16)');
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.beginPath();
+  ctx.ellipse(-2, -322, 8, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawPearl(x, y, radius, alpha, squashX = 1, squashY = 1) {
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.translate(x, y);
+  ctx.scale(squashX, squashY);
+  const grad = ctx.createRadialGradient(-radius * 0.36, -radius * 0.45, 2, 0, 0, radius);
+  grad.addColorStop(0, '#594137');
+  grad.addColorStop(0.46, '#211613');
+  grad.addColorStop(1, '#090707');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.24)';
+  ctx.beginPath();
+  ctx.arc(-radius * 0.28, -radius * 0.36, radius * 0.22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSpark(x, y, radius, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = 'rgba(255, 226, 168, 0.78)';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - radius, y);
+  ctx.lineTo(x + radius, y);
+  ctx.moveTo(x, y - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function pearlPopOffset(time, pearl) {
+  const p = (time - PEARL_START - pearl.delay) / pearl.duration;
+  if (p < 0 || p > 1) return { x: 0, y: 0, squash: 0, arc: 0, p: 0 };
+
+  const arc = Math.sin(Math.PI * p);
+  const settle = Math.sin(Math.PI * clamp01((p - 0.72) / 0.28));
+  const snap = Math.sin(Math.PI * 2.4 * p) * Math.pow(1 - p, 1.15);
+  return {
+    x: pearl.drift * 0.78 * arc + snap * pearl.roll * 12,
+    y: -pearl.pop * 0.78 * arc + snap * 8,
+    squash: settle,
+    arc,
+    p,
+  };
+}
+
+function drawCupBody(time) {
+  const jostle = pearlJostle(time);
+  const jostleStrength = Math.min(1, Math.abs(jostle) * 1.65);
+  const waveOffset = Math.sin(time * 8.4) * 3 + jostle * 13;
+  const waveTilt = jostle * 9;
+
+  ctx.save();
+  pathCupBody(ctx);
+  ctx.clip();
+
+  const tea = ctx.createLinearGradient(0, -150, 0, 235);
+  tea.addColorStop(0, '#f4c57a');
+  tea.addColorStop(0.42, '#ca8548');
+  tea.addColorStop(1, '#8f582e');
+  ctx.fillStyle = tea;
+  ctx.fillRect(-190, -112, 380, 360);
+
+  ctx.fillStyle = 'rgba(255, 234, 188, 0.22)';
+  ctx.beginPath();
+  ctx.moveTo(-158, -70 + waveOffset - waveTilt);
+  ctx.bezierCurveTo(-90, -98 + waveOffset, -28, -52 + waveOffset, 34, -74 + waveOffset);
+  ctx.bezierCurveTo(76, -88 + waveOffset, 114, -76 + waveOffset, 154, -62 + waveOffset + waveTilt);
+  ctx.lineTo(154, -22 + waveOffset + waveTilt * 0.35);
+  ctx.bezierCurveTo(80, -48 + waveOffset, 16, -8 + waveOffset, -44, -30 + waveOffset);
+  ctx.bezierCurveTo(-92, -48 + waveOffset, -126, -34 + waveOffset, -158, -18 + waveOffset - waveTilt * 0.35);
+  ctx.closePath();
+  ctx.fill();
+
+  const pearlItems = activePearls.map((pearl) => {
+    const pop = pearlPopOffset(time, pearl);
+    const organicX = pearlNoise(time, pearl.phase) * (1.2 + pearl.roll * 2.2);
+    const organicY = pearlNoise(time + 0.37, pearl.phase + 4.8) * (0.7 + pearl.lift * 1.6);
+    const impactX = jostle * 18 * pearl.roll;
+    const impactY = -Math.abs(jostle) * 13 * pearl.lift;
+    const compression = jostleStrength * (0.35 + pearl.lift * 0.35) + pop.squash * 0.28;
+    const x = pearl.x + organicX + impactX + pop.x;
+    const y = pearl.y + organicY + impactY + pop.y;
+
+    return {
+      pearl,
+      x,
+      y,
+      compression,
+      pop,
+    };
+  }).sort((a, b) => a.y - b.y);
+
+  for (const item of pearlItems) {
+    const alpha = 0.68 + item.pearl.depth * 0.22;
+    const radius = item.pearl.r * (0.94 + item.pearl.depth * 0.08);
+
+    if (item.pearl.trail && item.pop.arc > 0.24) {
+      ctx.save();
+      ctx.globalAlpha = alpha * item.pop.arc * 0.22;
+      ctx.strokeStyle = '#2b1710';
+      ctx.lineWidth = Math.max(2, radius * 0.28);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(item.x, item.y + radius * 1.4);
+      ctx.lineTo(item.x - item.pearl.drift * 0.18, item.y + radius * 3.2 + item.pop.arc * 18);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    drawPearl(
+      item.x,
+      item.y,
+      radius,
+      alpha,
+      1 + item.compression * 0.22,
+      1 - item.compression * 0.14
+    );
+  }
+
+  const teaVeil = ctx.createLinearGradient(0, 86, 0, 230);
+  teaVeil.addColorStop(0, 'rgba(213, 135, 67, 0.08)');
+  teaVeil.addColorStop(0.6, 'rgba(177, 95, 43, 0.24)');
+  teaVeil.addColorStop(1, 'rgba(96, 52, 28, 0.42)');
+  ctx.fillStyle = teaVeil;
+  ctx.fillRect(-170, 82, 340, 160);
+
+  ctx.strokeStyle = `rgba(255, 222, 172, ${0.16 + jostleStrength * 0.16})`;
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 2; i++) {
+    const y = 116 + i * 44 + Math.sin(time * 7 + i) * 3 + jostle * 8;
+    ctx.beginPath();
+    ctx.moveTo(-92, y);
+    ctx.bezierCurveTo(-34, y - 12, 24, y + 12, 96, y - 4);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  const wall = ctx.createLinearGradient(-170, -130, 170, 230);
+  wall.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+  wall.addColorStop(0.24, 'rgba(255, 255, 255, 0.08)');
+  wall.addColorStop(0.74, 'rgba(255, 255, 255, 0.14)');
+  wall.addColorStop(1, 'rgba(255, 255, 255, 0.34)');
+  ctx.fillStyle = wall;
+  pathCupBody(ctx);
+  ctx.fill();
+
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = 'rgba(255, 248, 230, 0.48)';
+  pathCupBody(ctx);
+  ctx.stroke();
+
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.24)';
+  ctx.beginPath();
+  ctx.moveTo(-106, -84);
+  ctx.bezierCurveTo(-102, 6, -84, 118, -68, 194);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(112, -86);
+  ctx.bezierCurveTo(98, 10, 85, 120, 70, 194);
+  ctx.stroke();
+}
+
+function drawLid() {
+  const lidGrad = ctx.createLinearGradient(0, -202, 0, -96);
+  lidGrad.addColorStop(0, '#fff8ef');
+  lidGrad.addColorStop(0.48, '#e7d6c2');
+  lidGrad.addColorStop(1, '#c7af96');
+
+  ctx.fillStyle = lidGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, -142, 188, 48, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.36)';
+  ctx.beginPath();
+  ctx.ellipse(-22, -154, 130, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#d6be9f';
+  roundRectPath(ctx, -166, -128, 332, 46, 22);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(0, -142, 188, 48, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(102, 74, 55, 0.38)';
+  ctx.beginPath();
+  ctx.ellipse(54, -151, 42, 13, -0.16, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawLabel() {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.13)';
+  ctx.lineWidth = 2;
+
+  for (let i = 0; i < 3; i++) {
+    const y = -16 + i * 42;
+    ctx.beginPath();
+    ctx.moveTo(-72, y);
+    ctx.bezierCurveTo(-28, y + 8, 28, y - 8, 72, y + 2);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.beginPath();
+  ctx.moveTo(-128, -96);
+  ctx.bezierCurveTo(-118, 8, -102, 112, -86, 194);
+  ctx.moveTo(128, -96);
+  ctx.bezierCurveTo(118, 8, 102, 112, 86, 194);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawCup(x, y, scaleX, scaleY, rotationDeg, strawAngleDeg, alpha, time) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x, y);
+  ctx.rotate(rotationDeg * Math.PI / 180);
+  ctx.scale(scaleX, scaleY);
+
+  drawStraw(strawAngleDeg);
+  drawLid();
+  drawCupBody(time);
+  drawLabel();
+
+  ctx.restore();
+}
+
+function cupMotion(time) {
+  let x = CUP_REST_X;
+  let y = CUP_REST_Y;
+  let scaleX = 1;
+  let scaleY = 1;
+  let rotation = 0;
+  let alpha = 1;
+  let phase = 'Drop';
+
+  if (time < DROP_END) {
+    const p = time / DROP_END;
+    x = mix(CUP_START_X, CUP_REST_X, p, easeOut);
+    y = mix(CUP_START_Y, CUP_REST_Y, p, easeIn);
+    rotation = mix(-8, 0, p, easeOut);
+    const stretch = clamp01((p - 0.48) / 0.52);
+    scaleX = 1 - 0.055 * stretch;
+    scaleY = 1 + 0.075 * stretch;
+  } else if (time < BOUNCE_1_END) {
+    const p = (time - DROP_END) / (BOUNCE_1_END - DROP_END);
+    y = CUP_REST_Y - Math.sin(Math.PI * p) * FIRST_BOUNCE_HEIGHT;
+    rotation = Math.sin(Math.PI * p) * -4.8;
+    scaleX = 1 + 0.18 * (1 - p) - 0.04 * Math.sin(Math.PI * p);
+    scaleY = 1 - 0.14 * (1 - p) + 0.06 * Math.sin(Math.PI * p);
+    phase = 'Bounce 1';
+  } else if (time < BOUNCE_2_END) {
+    const p = (time - BOUNCE_1_END) / (BOUNCE_2_END - BOUNCE_1_END);
+    y = CUP_REST_Y - Math.sin(Math.PI * p) * SECOND_BOUNCE_HEIGHT;
+    rotation = Math.sin(Math.PI * p) * 3.2;
+    scaleX = 1 + 0.08 * (1 - p) - 0.025 * Math.sin(Math.PI * p);
+    scaleY = 1 - 0.065 * (1 - p) + 0.032 * Math.sin(Math.PI * p);
+    phase = 'Bounce 2';
+  } else if (time < SETTLE_END) {
+    const p = (time - BOUNCE_2_END) / (SETTLE_END - BOUNCE_2_END);
+    rotation = Math.sin(p * Math.PI * 3) * 2.6 * (1 - p);
+    y = CUP_REST_Y + Math.sin(p * Math.PI * 2) * 6 * (1 - p);
+    scaleX = 1 + 0.025 * Math.sin(p * Math.PI * 2) * (1 - p);
+    scaleY = 1 - 0.02 * Math.sin(p * Math.PI * 2) * (1 - p);
+    phase = 'Settle';
+  } else if (time < PEARL_END) {
+    phase = 'Pearl pop';
+  } else if (time < STRAW_WIGGLE_END) {
+    phase = 'Straw wiggle';
+  } else {
+    phase = 'Loop reset';
+  }
+
+  if (time >= FADE_START) {
+    const p = (time - FADE_START) / (TOTAL_SECONDS - FADE_START);
+    alpha = 1 - easeInOut(clamp01(p));
+    y += easeInOut(clamp01(p)) * 18;
+    scaleX *= 1 - 0.04 * p;
+    scaleY *= 1 - 0.04 * p;
+  }
+
+  return { x, y, scaleX, scaleY, rotation, alpha, phase };
+}
+
+function strawAngle(time) {
+  const base = -10;
+  if (time < STRAW_WIGGLE_START || time > STRAW_WIGGLE_END) return base;
+
+  const p = (time - STRAW_WIGGLE_START) / (STRAW_WIGGLE_END - STRAW_WIGGLE_START);
+  const decay = 1 - easeOut(p);
+  return base + Math.sin(p * Math.PI * 8.5) * STRAW_WIGGLE_DEG * decay;
+}
+
+function drawTeaDroplets(time, cup) {
+  const originX = cup.x;
+  const originY = cup.y - 150 * cup.scaleY;
+
+  for (const drop of DROPLETS) {
+    const p = (time - PEARL_START - 0.08 - drop.delay) / drop.duration;
+    if (p < 0 || p > 1) continue;
+
+    const eased = easeOut(p);
+    const x = originX + drop.x + drop.vx * eased;
+    const y = originY + drop.y - drop.height * Math.sin(Math.PI * p) + 18 * easeIn(p);
+    const alpha = cup.alpha * Math.sin(Math.PI * p) * 0.78;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#d79a56';
+    ctx.beginPath();
+    ctx.ellipse(x, y, drop.r * (1 + p * 0.2), drop.r * (0.9 - p * 0.2), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const p = clamp01((time - PEARL_START - 0.2 - i * 0.04) / 0.38);
+    if (p <= 0 || p >= 1) continue;
+
+    const angle = -Math.PI * 0.7 + i * 0.38;
+    const dist = 34 + i * 8;
+    const x = originX + Math.cos(angle) * dist * easeOut(p);
+    const y = originY + 8 + Math.sin(angle) * dist * easeOut(p);
+    drawSpark(x, y, 5 * (1 - p), cup.alpha * (1 - p) * 0.55);
+  }
+}
+
+function render(time) {
+  drawBackground();
+  drawFloor();
+
+  const cup = cupMotion(time);
+  const straw = strawAngle(time);
+
+  drawShadow(cup.x, cup.y, cup.alpha, cup.scaleX);
+  drawTeaDroplets(time, cup);
+  drawCup(cup.x, cup.y, cup.scaleX, cup.scaleY, cup.rotation, straw, cup.alpha, time);
+
+  if (phaseLabel) {
+    phaseLabel.textContent = `Phase: ${cup.phase}`;
+  }
+}
+
+let startTime = performance.now();
+
+function animate(now) {
+  const totalElapsed = (now - startTime) / 1000;
+  const loopIndex = Math.floor(totalElapsed / TOTAL_SECONDS);
+  ensurePearlsForLoop(loopIndex);
+
+  const elapsed = totalElapsed % TOTAL_SECONDS;
+  render(elapsed);
+  requestAnimationFrame(animate);
+}
+
+if (restartButton) {
+  restartButton.addEventListener('click', () => {
+    startTime = performance.now();
+    activePearlLoop = -1;
+  });
+}
+
+if (new URLSearchParams(window.location.search).get('embed') === '1') {
+  document.body.classList.add('embed');
+}
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
